@@ -2,7 +2,7 @@
 
 * This application was written for and tested in a Debian 12 virtual machine with an NVIDIA RTX 4090, the CUDA SDK version 12.3.1, and Python 3.11.2
 
-* Steps 1-5 and 7 were tested on Windows 11 and no NVIDIA support
+* Steps 1-5 and 7 were tested on Windows 11 with no NVIDIA support
 
 ---
 
