@@ -6,6 +6,25 @@
 
 ---
 
+###### Linux Requirements
+
+1. Ensure the following packages are installed via `apt`:
+
+   ```
+   apt update
+   apt install python3.11-venv gcc cmake build-essential
+   ```
+
+   **Note:** For Debian systems, `python3.11-venv` is required to make virtual environments
+
+---
+
+###### Windows Requirements
+
+1. Install Visual Studio with C++ and CMake support: <https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio>
+
+---
+
 ###### Setup
 
 1. Clone this repository
