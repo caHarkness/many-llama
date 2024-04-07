@@ -4,8 +4,28 @@
 SCRIPT_DIR="$(dirname -- "$(readlink -f -- "$0";)";)"
 cd "$SCRIPT_DIR"
 
+VENV_FOUND=""
+
 # Activate the Python virtual environment:
-source ./venv/bin/activate
+# For Linux-made virtual environments with "bin" directory:
+if [[ -e "./venv/bin/activate" ]]
+then
+    source ./venv/bin/activate
+    VENV_FOUND=1
+fi
+
+# For Windows-made virtual environments with "Scripts" directory:
+if [[ -e "./venv/Scripts/activate" ]]
+then
+    source ./venv/Scripts/activate
+    VENV_FOUND=1
+fi
+
+if [[ -z "${VENV_FOUND}" ]]
+then
+    echo "No virtual environment found. Exiting..."
+    exit
+fi
 
 # Load the user settings and configuration:
 source ./config.sh
