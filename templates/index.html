@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
+
+        <style>
+            .navbar,
+            .navbar-spacing {
+                height: 1.5cm;
+            }
+
+            #app-title {
+                text-overflow: ellipsis;
+                max-width: 50%;
+            }
+
+            #messages div.message-body
+            {
+                text-align: left;
+                max-width: 75%;
+                background: rgba(128, 128, 128, 0.125);
+                padding: 1em;
+                display: inline-block;
+            }
+
+            #messages div.message-wrapper {
+                margin-bottom: 1em;
+            }
+
+            #messages div.message-wrapper.from-user {
+                text-align: right;
+                margin-left: auto;
+                margin-right: 0;
+            }
+        </style>
+    </head>
+
+    <body data-bs-theme="dark">
+        <title>{{ common.session }}</title>
+        
+        <div class="app-header d-print-none">
+            <div class="fixed-top" id="navbar-container">
+                <div class="navbar navbar-expand navbar-dark bg-black justify-content-between px-2">
+
+                    <div class="d-flex align-items-center">
+
+                        <span class="dropdown">
+                            <a class="btn btn-outline-secondary p-2 dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-fw fa-bars"></i></a>
+
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="/">
+                                    <i class="fa fa-fw fa-home mr-2"></i>
+                                    <span>Home</span>
+                                </a>
+
+                                <a class="dropdown-item" href="/new">
+                                    <i class="fa fa-fw fa-file mr-2"></i>
+                                    <span>New</span>
+                                </a>
+
+                                {% for session in common.sessions %}
+                                    <a class="dropdown-item" href="/session/{{session}}">
+                                        <i class="fa fa-fw fa-cubes mr-2"></i>
+                                        <span>{{session}}</span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </span>
+
+                        <span class="navbar-brand mx-3" id="app-title">{{ common.session }}</span>
+                    </div>
+
+                    <div>
+                        <!-- -->
+                        <!-- <a class="btn btn-outline-danger p-2 mr-1" onclick="fnClear();"><i class="fa fa-fw fa-trash"></i></a> -->
+                        <a class="btn btn-outline-secondary p-2 mr-3" onclick="fnRefresh();"><i class="fa fa-fw fa-refresh"></i></a>
+                        
+
+                        <span class="dropdown">
+                            <a class="btn btn-outline-secondary p-2 dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-fw fa-ellipsis-vertical"></i></a>
+
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <a class="dropdown-item" onclick="fnShowRenameModal();">
+                                    <i class="fa fa-fw fa-i-cursor mr-2"></i>
+                                    <span>Rename</span>
+                                </a>
+
+                                <a class="dropdown-item" onclick="fnDelete();">
+                                    <i class="fa fa-fw fa-trash mr-2"></i>
+                                    <span>Delete</span>
+                                </a>
+
+                                <!--
+                                <div class="dropdown-divider"></div>
+                                -->
+                            </div>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="navbar-spacing-container"></div>
+        </div>
+
+        <div class="app-body">
+            <div class="container mt-3">
+                <div class="row">
+                    <div class="col-lg-5">
+                        <div class="w-100" id="messages">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Template to copy for added messages: -->
+            <div class="d-none">
+                <div class="message-template">
+                    <div class="message-wrapper">
+                        <div class="message-body">No message content...</div>
+                        <div class="message-footer">
+                            <span>By</span>
+                            <span class="message-author">nobody</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-footer d-print-none">
+            <div>
+                <div class="navbar-spacing"></div>
+            </div>
+
+            <div class="fixed-bottom">
+                <div class="navbar navbar-expand navbar-dark bg-dark justify-content-between px-2">
+
+                    <div class="w-100 align-items-center">
+                        <div class="form-inline w-100">
+                            <div class="input-group w-100">
+                                <input type="text" class="form-control" name="user-input" placeholder="Type a message..." autocomplete="off">
+                                <a class="btn btn-primary"><i class="fa fa-fw fa-paper-plane"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" id="rename-modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="mb-2">New Name</label>
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" name="new-name" placeholder="Type a new name..." />
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <a class="btn btn-primary" onclick="fnRename();">Save</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Classes -->
+        <script>
+            $(function() {
+                NavbarHelper = {};
+
+                NavbarHelper.fnInit = function()
+                {
+                    $("#navbar-spacing-container").first().html("");
+                    $("#navbar-container .navbar").each(function(i, x) {
+                        var new_div = $("<div></div>");
+
+                        new_div.addClass("navbar-spacing");
+
+                        $("#navbar-spacing-container")
+                            .first()
+                            .append(new_div);
+                    });
+                };
+
+                NavbarHelper.fnInit();
+            });
+        </script>
+
+        <script>GlobalSessionName = `{{ common.session }}`;</script>
+
+        <!-- Page Functionality -->
+        <script>
+            $(function() {
+                fnClear = function()
+                {
+                    $.ajax({
+                        url: `/session/${GlobalSessionName}/clear`,
+                        type: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        data: JSON.stringify({
+                            dummy: "data"
+                        }),
+                        success: function(data)
+                        {
+                            fnRefresh();
+                        }
+                    });
+                };
+
+                fnDelete = function()
+                {
+                    $.ajax({
+                        url: `/session/${GlobalSessionName}/delete`,
+                        type: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        data: JSON.stringify({
+                            dummy: "data"
+                        }),
+                        success: function(data)
+                        {
+                            window.location.href = "/";
+                        }
+                    });
+                };
+
+                fnShowRenameModal = function()
+                {
+                    $("#rename-modal").modal("show");
+                };
+
+                fnRename = function()
+                {
+                    newName = $("[name='new-name']").first().val();
+                    if (newName.match(/^[A-Za-z0-9 ]{1,}$/g))
+                        window.location.href = `${window.location.href}/rename/${newName}`;
+                };
+
+                fnRefresh = function()
+                {
+                    $.ajax({
+                        url: `/session/${GlobalSessionName}/messages`,
+                        type: "GET",
+                        success: function(data)
+                        {
+                            $("#messages").html("");
+
+                            for (o in data)
+                            {
+                                o = data[o];
+                                if (o.type == "reply")
+                                    fnAddLine("bot", o.message);
+                                else fnAddLine("user", o.message);
+                            }
+
+                            window.scrollTo(0, document.body.scrollHeight);
+                            $("[name='user-input']").first().focus();
+                        }
+                    });
+                };
+
+                fnGetReply = async function(query)
+                {
+                    console.log(`Query: ${query}`)
+                    var reply = null;
+
+                    $.ajax({
+                        url: `/session/${GlobalSessionName}`,
+                        type: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        data: JSON.stringify({
+                            query: query
+                        }),
+                        success: function(data)
+                        {
+                            reply = data.reply;
+                            console.log(`Reply: ${reply}`);
+                        },
+                        error: function(xhr, x)
+                        {
+                            reply = "Error";
+                        }
+                    });
+
+                    while (reply == null)
+                        await new Promise(r => setTimeout(r, 100));
+
+                    return reply;
+                };
+
+                fnStressTest = function()
+                {
+                    fnGetReply("How do I calculate the circumference of a circle with a radius of 2?");
+                    fnGetReply("Write a short story about debugging code.");
+                    fnGetReply("What happens when two threads access and try to modify the same memory in programming?");
+                };
+
+                fnAddLine = function(who, text)
+                {
+                    var div = $($(".message-template").first().html());
+
+                    div.addClass(`from-${who}`);
+                    div.find(".message-author").first().html(who);
+                    div.find(".message-body").first().html(text);
+
+                    $("#messages").first().append(div);
+                    return div;
+                };
+
+                fnSend = async function()
+                {
+                    var input = $("[name='user-input']").first();
+                    var text = input.val();
+
+                    input.val("");
+
+                    var divMessageUser = fnAddLine("user", text).find(".message-body").first();
+                    var divMessageBot = fnAddLine("bot", "...").find(".message-body").first();
+
+                    window.scrollTo(0, document.body.scrollHeight);
+
+                    var reply = await fnGetReply(text);
+
+                    divMessageBot.html(reply);
+                    window.scrollTo(0, document.body.scrollHeight);
+                };
+
+                fnBind = function()
+                {
+                    $(document).on("keyup", function(e) {
+                        if (e.keyCode == 13)
+                            if ($("[name='user-input']").is(":focus"))
+                                fnSend();
+                    });
+                };
+
+                fnBind();
+                fnRefresh();
+            });
+
+        </script>
+    </body>
+</html>

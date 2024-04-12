@@ -38,4 +38,6 @@ then
 fi
 
 # Run the Python script:
-python -u app.py
+#python -u app.py
+
+flask --app app run --host=0.0.0.0 --port=8010

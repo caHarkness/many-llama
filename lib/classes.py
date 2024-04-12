@@ -14,30 +14,35 @@ class Conversation:
         # Automatically load on instantiation:
         self.load()
 
-    def load(self):
+    def load(self, last_n_messages=None):
         f_text = read_file(self.session_path, "{}")
         f_json = json.loads(f_text)
         self.session = f_json
 
         self.session["user_name"] = safely_get(self.session, "user_name", DEFAULT_USER_NAME)
-        self.session["bot_name"] = safely_get(self.session, "bot_name", DEFAULT_BOT_NAME)
+        self.session["assistant_name"] = safely_get(self.session, "assistant_name", DEFAULT_ASSISTANT_NAME)
 
         user_name = self.session["user_name"]
-        bot_name = self.session["bot_name"]
-
-        # default_context = "This is a conversation between a user named {user_name} and another user named {bot_name}. {bot_name} is short, stern, and straight to the point. {bot_name} is almost impolite and seemingly uninterested, but will have a change of attitude if {user_name} asks. If {bot_name} is not 100 percent confident of its answer, it will reply stating it does not know and will not try to guess the answer.".format({"user_name": user_name, "bot_name": bot_name})
+        assistant_name = self.session["assistant_name"]
 
         default_context = DEFAULT_CONTEXT.format(
             user_name=user_name,
-            bot_name=bot_name)
+            assistant_name=assistant_name)
 
         self.session["context"] = safely_get(self.session, "context", default_context)
         self.session["conversation"] = safely_get(self.session, "conversation", [])
 
         self.user_name = user_name
-        self.bot_name = bot_name
+        self.assistant_name = assistant_name
+
+        if last_n_messages is not None:
+            while len(self.session["conversation"]) > last_n_messages:
+                self.session["conversation"].pop(0)
+            self.index_messages()
 
     def save(self, complete=False):
+        self.index_messages()
+
         f_text = json.dumps(self.session, indent=4)
         write_file(self.session_path, f_text)
 
@@ -61,8 +66,6 @@ class Conversation:
     # https://huggingface.co/TheBloke/dolphin-2.1-mistral-7B-GGUF
     def build_prompt_chatml(self, user_input):
         context = self.session["context"]
-
-        
         output = f"<|im_start|>system\n{context}<|im_end|>\n"
 
 
@@ -71,7 +74,7 @@ class Conversation:
             message = o["message"]
 
             name = "user" if name == self.user_name else name
-            name = "assistant" if name == self.bot_name else name
+            name = "assistant" if name == self.assistant_name else name
 
             output += f"<|im_start|>{name}\n{message}<|im_end|>\n"
 
@@ -80,11 +83,16 @@ class Conversation:
         return output
 
     def get_conversation(self):
-        self.session["conversation"] = safely_get(self.session, "conversation", [])
         return self.session["conversation"]
 
+    def index_messages(self):
+        for i in range(0, len(self.session["conversation"])):
+            o = self.session["conversation"][i]
+            o["order"] = i
+            self.session["conversation"][i] = o
+
     def add_message(self, name, message):
-        self.session["conversation"] = safely_get(self.session, "conversation", [])
+        self.index_messages()
 
         current_index = len(self.session["conversation"])
 
@@ -92,7 +100,8 @@ class Conversation:
             "order": current_index,
             "name": name,
             "message": message,
-            "time": get_timestamp()
+            "time": get_timestamp(),
+            "type": "query" if name == self.user_name else "reply"
         })
 
     def get_response(self, user_input):

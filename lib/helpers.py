@@ -2,6 +2,8 @@ import os
 import re
 import json
 import time
+import random
+import hashlib
 from datetime import datetime
 from pathlib import Path
 
@@ -34,7 +36,6 @@ def read_file(f_name, f_data_default):
         return f_data_default
 
 def write_file(f_path, f_data):
-    
     with Path(f_path) as f:
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(f_data)
@@ -51,3 +52,8 @@ def get_timestamp(fname_safe=False):
     timestamp = now.strftime("%f")[:-3]
     timestamp = now.strftime(format_str) + timestamp
     return timestamp
+
+def new_md5():
+    input_str = str(time.time())
+    md5_hash = hashlib.md5(input_str.encode()).hexdigest()
+    return md5_hash
