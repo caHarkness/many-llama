@@ -1,18 +1,32 @@
 import re
 import json
+import os
 
 import lib.helpers
 from lib.helpers import *
 
 class Conversation:
-    def __init__(self, session_name, llm):
+    def __init__(self, session_name, llm=None):
         self.session = {}
-        self.session_name = session_name
-        self.session_path = f"sessions/{session_name}.json"
+        self.rename(session_name)
         self.llm = llm
 
         # Automatically load on instantiation:
         self.load()
+
+    def rename(self, new_session_name):
+        old_session_name = None
+        if hasattr(self, "session_name"):
+            old_session_name = self.session_name
+
+        self.session_name = new_session_name
+        self.session_path = f"sessions/{new_session_name}.json"
+
+        try:
+            if old_session_name is not None:
+                os.unlink(f"sessions/{old_session_name}.json")
+        except:
+            pass
 
     def load(self, last_n_messages=None):
         f_text = read_file(self.session_path, "{}")
@@ -36,9 +50,21 @@ class Conversation:
         self.assistant_name = assistant_name
 
         if last_n_messages is not None:
-            while len(self.session["conversation"]) > last_n_messages:
-                self.session["conversation"].pop(0)
+            # If the number is 0 or positive, use that many messages from the end of the list:
+            if last_n_messages > -1:
+                while len(self.session["conversation"]) > last_n_messages:
+                    self.session["conversation"].pop(0)
+
+            # If the number is negative, use that many messages from the top:
+            if last_n_messages < 0:
+                last_n_messages = abs(last_n_messages)
+                while len(self.session["conversation"]) > last_n_messages:
+                    arr_len = len(self.session["conversation"])
+                    self.session["conversation"].pop(arr_len - 1)
+
             self.index_messages()
+
+
 
     def save(self, complete=False):
         self.index_messages()
@@ -49,6 +75,13 @@ class Conversation:
         if complete == True:
             timestamp = get_timestamp(fname_safe=True)
             write_file(f"scripts/{self.session_name}_{timestamp}.txt", self.get_chat_text())
+
+    def delete(self):
+        try:
+            session_name = self.session_name
+            os.unlink(f"sessions/{session_name}.json")
+        except:
+            pass
 
 
     def get_chat_text(self):
@@ -105,6 +138,8 @@ class Conversation:
         })
 
     def get_response(self, user_input):
+        if self.llm is None:
+            raise Exception("Conversation LLM is None")
 
         output = ""
         generation = self.llm(
@@ -121,3 +156,9 @@ class Conversation:
                 output = generation["choices"][0]["text"].strip()
 
         return output
+
+    def get_last_message(self):
+        conversation = self.session["conversation"]
+        message = conversation[len(conversation) - 1]
+        return message
+

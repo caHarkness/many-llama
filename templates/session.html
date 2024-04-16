@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Session{% endblock %}
+
+{% block options %}
+    <a class="dropdown-item" onclick="fnShowRenameModal();">
+        <i class="fa fa-fw fa-i-cursor mr-2"></i>
+        <span>Rename</span>
+    </a>
+
+    <a class="dropdown-item" onclick="fnDelete();">
+        <i class="fa fa-fw fa-trash mr-2"></i>
+        <span>Delete</span>
+    </a>
+
+    <div class="dropdown-divider"></div>
+{% endblock options %}
+
+{% block toolbar %}
+    <div class="navbar navbar-expand bg-gray-800 justify-content-between px-2">
+        <div class="align-items-center">
+            <div class="form-inline">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fa fa-fw fa-search"></i></span>
+                    <input type="text" class="form-control" name="search-text" placeholder="Search messages..." autocomplete="off">
+                    <a class="btn btn-secondary" onclick="fnClearSearch();"><i class="fa fa-fw fa-xmark"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div>
+        </div>
+    </div>
+{% endblock toolbar %}
+
+{% block body %}
+    <link rel="stylesheet" href="/css/session.css">
+    <input type="hidden" name="session-name" value="{{ common.session }}" />
+
+    <div class="container mt-3">
+        <div class="row">
+            <div class="col-lg-5">
+                <div class="mt-2 mb-5">
+                    <div>This is the beginning of the <a href="javascript:void(0);" onclick="fnShowRenameModal();">{{ common.session }}</a> session.</div>
+                    <hr />
+                </div>
+
+                <div class="w-100" id="messages"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template to copy for added messages: -->
+    <div class="d-none">
+        <div class="message-template">
+            <div class="message-wrapper">
+                <div class="message-body">No message content...</div>
+                <div class="message-footer">
+                    <span>By</span>
+                    <span class="message-author">nobody</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="rename-modal">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="mb-2">New Name</label>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" name="new-name" placeholder="Type a new name..." fv-regex="{{ common.session_name_regex }}" fv-warning="Only alphanumerics, hypens, and underscores are allowed." />
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <a class="btn btn-primary" onclick="fnRename();">Save</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock body %}
+
+{% block footer %}
+    <div>
+        <div class="navbar-spacing"></div>
+    </div>
+
+    <div class="fixed-bottom border-top">
+        <div class="navbar navbar-expand navbar-dark bg-black justify-content-between px-2">
+
+            <div class="w-100 align-items-center">
+                <div class="form-inline w-100">
+                    <div class="input-group w-100">
+                        <input type="text" class="form-control" name="user-input" placeholder="Type a message..." autocomplete="off">
+                        <a class="btn btn-primary" onclick="fnSend();"><i class="fa fa-fw fa-paper-plane"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock footer %}
+
+{% block scripts %}
+    <!-- Page Functionality -->
+    <script>
+        $(function() {
+            fnGetSessionName = function()
+            {
+                return $("[name='session-name']").first().val();
+            };
+
+            fnClear = function()
+            {
+                $.ajax({
+                    url: `/session/${fnGetSessionName()}/clear`,
+                    type: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    data: JSON.stringify({
+                        dummy: "data"
+                    }),
+                    success: function(data)
+                    {
+                        fnRefresh();
+                    }
+                });
+            };
+
+            fnClearSearch = function()
+            {
+                $("[name='search-text']")
+                    .first()
+                    .val("")
+                    .trigger("input");
+            };
+
+            fnShowRenameModal = function()
+            {
+                $("#rename-modal").modal("show");
+                $("[name='new-name']").first().focus();
+            };
+
+            fnRename = function()
+            {
+                newName = $("[name='new-name']").first().val();
+
+                FormValidator.onPass(function() {
+                    $.ajax({
+                        url: `/v1/session/${fnGetSessionName()}/rename`,
+                        type: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        data: JSON.stringify({
+                            new_session_name: newName
+                        }),
+                        success: function(data)
+                        {
+                            window.location.href = `/session/${data.session_name}`;
+                        }
+                    });
+                });
+            };
+
+            fnDelete = function()
+            {
+                $.ajax({
+                    url: `/v1/session/${fnGetSessionName()}/delete`,
+                    type: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    data: JSON.stringify({
+                        session_name: fnGetSessionName()
+                    }),
+                    success: function(data)
+                    {
+                        window.location.href = `/`;
+                    }
+                });
+            };
+
+            GlobalSessionData = {};
+
+            fnRefresh = function()
+            {
+                $.ajax({
+                    url: `/v1/session/${fnGetSessionName()}`,
+                    type: "GET",
+                    success: function(data)
+                    {
+                        console.log(data);
+
+                        GlobalSessionData = data;
+
+                        $("#messages").html("");
+
+                        for (o in data.conversation)
+                        {
+                            o = data.conversation[o];
+                            if (o.type == "reply")
+                                fnAddLine("reply", o.name, fnMakeReplyReplacements(o.message));
+                            else fnAddLine("query", o.name, o.message);
+                        }
+
+                        window.scrollTo(0, document.body.scrollHeight);
+                        $("[name='user-input']").first().focus();
+                    }
+                });
+            };
+
+            fnGetReply = async function(query)
+            {
+                console.log(`Query: ${query}`)
+                var reply = null;
+
+                $.ajax({
+                    url: `/v1/session/${fnGetSessionName()}`,
+                    type: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    data: JSON.stringify({
+                        query: query
+                    }),
+                    success: function(data) { reply = data.reply; },
+                    error: function(xhr, x) { reply = "Error"; }
+                });
+
+                while (reply == null)
+                    await new Promise(r => setTimeout(r, 100));
+
+                console.log(`Reply: ${reply}`);
+                reply = fnMakeReplyReplacements(reply);
+                return reply;
+            };
+
+            fnStressTest = function()
+            {
+                fnGetReply("How do I calculate the circumference of a circle with a radius of 2?");
+                fnGetReply("Write a short story about debugging code.");
+                fnGetReply("What happens when two threads access and try to modify the same memory in programming?");
+            };
+
+            fnMakeReplyReplacements = function(str)
+            {
+                if (str.match(/```/g))
+                {
+                    //console.log("Made it here!");
+                    str = str.replace(/```.*\n([\s\S]{1,})```/g, "<pre>$1</pre>");
+                    //console.log(str);
+
+                    //str = `<pre>${str}</pre>`;
+                }
+                else
+                {
+                    if (str.match(/\n/g))
+                        str = str.replace(/\n/g, "<br />");
+                }
+
+                return str;
+            };
+
+            fnAddLine = function(kind, who, text)
+            {
+                var div = $($(".message-template").first().html());
+
+                //div.addClass(cls);
+                div.find(".message-author").first().html(who);
+                div.find(".message-body").first().html(text);
+
+                switch (kind)
+                {
+                    case "query":
+                        div.addClass("query");
+                        div.find(".message-body").first().addClass("alert alert-primary mb-1");
+                        break;
+
+                    case "reply":
+                        div.addClass("reply");
+                        div.find(".message-body").first().addClass("alert alert-secondary mb-1");
+                        break;
+                }
+
+
+                $("#messages").first().append(div);
+                return div;
+            };
+
+            fnSend = async function()
+            {
+                var input = $("[name='user-input']").first();
+                var text = input.val();
+
+                input.val("");
+
+                var divMessageUser = fnAddLine("query", GlobalSessionData.user_name, text).find(".message-body").first();
+                var divMessageBot = fnAddLine("reply", GlobalSessionData.assistant_name, "...").find(".message-body").first();
+
+                window.scrollTo(0, document.body.scrollHeight);
+
+                var reply = await fnGetReply(text);
+
+                divMessageBot.html(reply);
+                window.scrollTo(0, document.body.scrollHeight);
+            };
+
+            fnBind = function()
+            {
+                $(document).on("keyup", function(e) {
+                    if (e.keyCode == 13)
+                        if ($("[name='user-input']").is(":focus"))
+                            fnSend();
+                });
+
+                $("[name='search-text']").on("input", function() {
+                    elem = $(this);
+                    text1 = elem.val();
+
+                    $("#messages div.message-wrapper").each(function(i, x) {
+                        x = $(x);
+                        text2 = x.text();
+
+                        x.hide();
+                        //if (text2.match(new RegExp(text1)))
+                        if (text2.hasWords(text1))
+                            x.show();
+                    });
+                });
+            };
+
+            fnBind();
+            fnRefresh();
+        });
+
+    </script>
+{% endblock scripts %}
