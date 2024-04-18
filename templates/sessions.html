@@ -4,41 +4,45 @@
 
 {% block toolbar %}
     <div class="navbar navbar-expand bg-gray-800 justify-content-between px-2">
-
-
         <div class="align-items-center">
             <div class="form-inline">
                 <div class="input-group">
                     <span class="input-group-text"><i class="fa fa-fw fa-search"></i></span>
                     <input type="text" class="form-control" name="search-text" placeholder="Enter a name..." autocomplete="off" fv-regex="{{ common.session_name_regex }}" fv-warning="Only alphanumerics, hypens, and underscores are allowed.">
-                    <a class="btn btn-primary" onclick="fnGo();"><i class="fa fa-fw fa-circle-plus"></i></a>
+                    <a class="btn btn-primary" onclick="fnGo();"><i class="fa fa-fw fa-arrow-right"></i></a>
                 </div>
             </div>
-        </div>
-
-
-        <div>
         </div>
     </div>
 {% endblock toolbar %}
 
+{% block navbar_spacing %}
+    <div class="navbar-spacing"></div>
+{% endblock navbar_spacing %}
+
 {% block body %}
     <!--
     <div class="container"> -->
-        <div class="row">
-            <div class="col-lg-5 offset-lg-1">
+        <div class="row m-0">
+            <div class="col-lg-12 p-0">
                 {% for session in common.sessions %}
                     <div class="py-3 border-bottom cursor-pointer highlight-hover" data-session="{{ session.name }}">
                     <table class="w-100">
                         <tbody>
                             <tr>
-                                <td class="w-1"><i class="fa fa-fw fa-message mx-3"></i></td>
+                                <td class="w-1">
+                                    <i class="fa fa-fw fa-{{ session.name[0].lower() }} thread-icon mx-3"></i>
+                                </td>
                                 <td class="">
                                     <div>
                                         <div><span class="fw-bold">{{ session.name }}</span></div>
                                         <div class="text-muted">
-                                            <span>{{ session.last_message.name }}: </span>
-                                            <span>{{ session.last_message.message }}</span>
+                                            {% if session.last_message != None %}
+                                                {% if session.last_message.hidden == False %}
+                                                    <span>{{ session.last_message.author_name }}: </span>
+                                                    <span>{{ session.last_message.body }}</span>
+                                                {% endif %}
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </td>

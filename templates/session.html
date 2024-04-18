@@ -1,16 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}Session{% endblock %}
+{% block title %}
+    {{ common.session.name }}
+{% endblock %}
+
+{% block primary_action %}
+    <a class="btn btn-outline-secondary border-0 p-2" href="/"><i class="fa fa-fw fa-arrow-left"></i></a>
+{% endblock primary_action %}
 
 {% block options %}
-    <a class="dropdown-item" onclick="fnShowRenameModal();">
-        <i class="fa fa-fw fa-i-cursor mr-2"></i>
-        <span>Rename</span>
+    <a class="dropdown-item" onclick="fnEditPage();">
+        <i class="fa fa-fw fa-edit me-3"></i>
+        <span>Edit</span>
     </a>
 
-    <a class="dropdown-item" onclick="fnDelete();">
-        <i class="fa fa-fw fa-trash mr-2"></i>
-        <span>Delete</span>
+    <a class="dropdown-item" onclick="fnShowSaveAsModal();">
+        <i class="fa fa-fw fa-save me-3"></i>
+        <span>Save As</span>
+    </a>
+
+    {% if "last_n_messages" in common.session %}
+        {% if common.session.last_n_messages.__class__.__name__ == "int" %}
+            <a class="dropdown-item" onclick="fnReset();">
+                <i class="fa fa-fw fa-recycle me-3"></i>
+                <span>Reset</span>
+            </a>
+        {% endif %}
+    {% endif %}
+
+    {% if
+            "locked" not in common.session
+        or common.session.locked == False
+        or common.session.locked == None
+    %}
+        <a class="dropdown-item" onclick="fnDelete();">
+            <i class="fa fa-fw fa-trash me-3"></i>
+            <span>Delete</span>
+        </a>
+    {% endif %}
+
+    <a class="dropdown-item" onclick="fnShowSettingsModal();">
+        <i class="fa fa-fw fa-cog me-3"></i>
+        <span>Settings</span>
     </a>
 
     <div class="dropdown-divider"></div>
@@ -33,15 +64,19 @@
     </div>
 {% endblock toolbar %}
 
+{% block navbar_spacing %}
+    <div class="navbar-spacing"></div>
+{% endblock navbar_spacing %}
+
 {% block body %}
     <link rel="stylesheet" href="/css/session.css">
-    <input type="hidden" name="session-name" value="{{ common.session }}" />
+    <input type="hidden" name="session-name" value="{{ common.session.name }}" />
 
     <div class="container mt-3">
         <div class="row">
             <div class="col-lg-5">
                 <div class="mt-2 mb-5">
-                    <div>This is the beginning of the <a href="javascript:void(0);" onclick="fnShowRenameModal();">{{ common.session }}</a> session.</div>
+                    <div>This is the beginning of the <a href="javascript:void(0);" onclick="fnShowRenameModal();">{{ common.session_name }}</a> session.</div>
                     <hr />
                 </div>
 
@@ -54,16 +89,30 @@
     <div class="d-none">
         <div class="message-template">
             <div class="message-wrapper">
-                <div class="message-body">No message content...</div>
-                <div class="message-footer">
-                    <span>By</span>
-                    <span class="message-author">nobody</span>
+                <div class="message-id d-none">-1</div>
+                <div class="message-body-original d-none">No message content...</div>
+                <div class="message-body mb-0">No message content...</div>
+                <div class="message-footer text-muted align-text-top">
+                    <small>
+                        <span></span>
+                        <span class="message-author">nobody</span>
+                        <span class="message-control-link d-none">| <a href="javascript:void(0);" onclick="fnEditMessage(this);"><i class="fa fa-fw fa-edit"></i></a></span>
+                    </small>
                 </div>
+                <div class="message-control-container"></div>
             </div>
+        </div>
+
+        <div class="message-controls my-2">
+            <a class="btn btn-sm btn-outline-success mb-1" onclick="fnSaveMessage(this);">Save <i class="fa fa-fw fa-save"></i></a>
+            <a class="btn btn-sm btn-outline-secondary mb-1 hide-message-btn" onclick="fnHideMessage(this, true);">Hide <i class="fa fa-fw fa-eye-slash"></i></a>
+            <a class="btn btn-sm btn-outline-secondary mb-1 unhide-message-btn" onclick="fnHideMessage(this, false);">Unhide <i class="fa fa-fw fa-eye"></i></a>
+            <a class="btn btn-sm btn-outline-danger mb-1" onclick="fnDeleteMessage(this);">Delete <i class="fa fa-fw fa-trash"></i></a>
+            <a class="btn btn-sm btn-outline-secondary mb-1" onclick="fnCancelEditMessage(this);">Cancel</i></a>
         </div>
     </div>
 
-    <div class="modal" id="rename-modal">
+    <div class="modal" id="save-as-modal">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-body">
@@ -75,7 +124,54 @@
                     </div>
 
                     <div class="text-end">
-                        <a class="btn btn-primary" onclick="fnRename();">Save</a>
+                        <a class="btn btn-primary" onclick="fnSaveAs();">Save</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="conversation-settings-modal">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-body">
+
+
+                    <div class="form-group">
+                        <label class="mb-2">User Name</label>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" name="user_name">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="mb-2">Assistant Name</label>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" name="assistant_name">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="mb-2">Context</label>
+                        <div class="input-group mb-2">
+                            <textarea class="form-control" name="context"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="mb-2">Last N Messages</label>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" name="last_n_messages">
+                        </div>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="locked" value="">
+                        <label class="form-check-label">Locked</label>
+                    </div>
+
+                    <div class="text-end">
+                        <a class="btn btn-primary" onclick="fnSaveSettings();">Save</a>
                     </div>
                 </div>
             </div>
@@ -105,237 +201,5 @@
 
 {% block scripts %}
     <!-- Page Functionality -->
-    <script>
-        $(function() {
-            fnGetSessionName = function()
-            {
-                return $("[name='session-name']").first().val();
-            };
-
-            fnClear = function()
-            {
-                $.ajax({
-                    url: `/session/${fnGetSessionName()}/clear`,
-                    type: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    data: JSON.stringify({
-                        dummy: "data"
-                    }),
-                    success: function(data)
-                    {
-                        fnRefresh();
-                    }
-                });
-            };
-
-            fnClearSearch = function()
-            {
-                $("[name='search-text']")
-                    .first()
-                    .val("")
-                    .trigger("input");
-            };
-
-            fnShowRenameModal = function()
-            {
-                $("#rename-modal").modal("show");
-                $("[name='new-name']").first().focus();
-            };
-
-            fnRename = function()
-            {
-                newName = $("[name='new-name']").first().val();
-
-                FormValidator.onPass(function() {
-                    $.ajax({
-                        url: `/v1/session/${fnGetSessionName()}/rename`,
-                        type: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        data: JSON.stringify({
-                            new_session_name: newName
-                        }),
-                        success: function(data)
-                        {
-                            window.location.href = `/session/${data.session_name}`;
-                        }
-                    });
-                });
-            };
-
-            fnDelete = function()
-            {
-                $.ajax({
-                    url: `/v1/session/${fnGetSessionName()}/delete`,
-                    type: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    data: JSON.stringify({
-                        session_name: fnGetSessionName()
-                    }),
-                    success: function(data)
-                    {
-                        window.location.href = `/`;
-                    }
-                });
-            };
-
-            GlobalSessionData = {};
-
-            fnRefresh = function()
-            {
-                $.ajax({
-                    url: `/v1/session/${fnGetSessionName()}`,
-                    type: "GET",
-                    success: function(data)
-                    {
-                        console.log(data);
-
-                        GlobalSessionData = data;
-
-                        $("#messages").html("");
-
-                        for (o in data.conversation)
-                        {
-                            o = data.conversation[o];
-                            if (o.type == "reply")
-                                fnAddLine("reply", o.name, fnMakeReplyReplacements(o.message));
-                            else fnAddLine("query", o.name, o.message);
-                        }
-
-                        window.scrollTo(0, document.body.scrollHeight);
-                        $("[name='user-input']").first().focus();
-                    }
-                });
-            };
-
-            fnGetReply = async function(query)
-            {
-                console.log(`Query: ${query}`)
-                var reply = null;
-
-                $.ajax({
-                    url: `/v1/session/${fnGetSessionName()}`,
-                    type: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    data: JSON.stringify({
-                        query: query
-                    }),
-                    success: function(data) { reply = data.reply; },
-                    error: function(xhr, x) { reply = "Error"; }
-                });
-
-                while (reply == null)
-                    await new Promise(r => setTimeout(r, 100));
-
-                console.log(`Reply: ${reply}`);
-                reply = fnMakeReplyReplacements(reply);
-                return reply;
-            };
-
-            fnStressTest = function()
-            {
-                fnGetReply("How do I calculate the circumference of a circle with a radius of 2?");
-                fnGetReply("Write a short story about debugging code.");
-                fnGetReply("What happens when two threads access and try to modify the same memory in programming?");
-            };
-
-            fnMakeReplyReplacements = function(str)
-            {
-                if (str.match(/```/g))
-                {
-                    //console.log("Made it here!");
-                    str = str.replace(/```.*\n([\s\S]{1,})```/g, "<pre>$1</pre>");
-                    //console.log(str);
-
-                    //str = `<pre>${str}</pre>`;
-                }
-                else
-                {
-                    if (str.match(/\n/g))
-                        str = str.replace(/\n/g, "<br />");
-                }
-
-                return str;
-            };
-
-            fnAddLine = function(kind, who, text)
-            {
-                var div = $($(".message-template").first().html());
-
-                //div.addClass(cls);
-                div.find(".message-author").first().html(who);
-                div.find(".message-body").first().html(text);
-
-                switch (kind)
-                {
-                    case "query":
-                        div.addClass("query");
-                        div.find(".message-body").first().addClass("alert alert-primary mb-1");
-                        break;
-
-                    case "reply":
-                        div.addClass("reply");
-                        div.find(".message-body").first().addClass("alert alert-secondary mb-1");
-                        break;
-                }
-
-
-                $("#messages").first().append(div);
-                return div;
-            };
-
-            fnSend = async function()
-            {
-                var input = $("[name='user-input']").first();
-                var text = input.val();
-
-                input.val("");
-
-                var divMessageUser = fnAddLine("query", GlobalSessionData.user_name, text).find(".message-body").first();
-                var divMessageBot = fnAddLine("reply", GlobalSessionData.assistant_name, "...").find(".message-body").first();
-
-                window.scrollTo(0, document.body.scrollHeight);
-
-                var reply = await fnGetReply(text);
-
-                divMessageBot.html(reply);
-                window.scrollTo(0, document.body.scrollHeight);
-            };
-
-            fnBind = function()
-            {
-                $(document).on("keyup", function(e) {
-                    if (e.keyCode == 13)
-                        if ($("[name='user-input']").is(":focus"))
-                            fnSend();
-                });
-
-                $("[name='search-text']").on("input", function() {
-                    elem = $(this);
-                    text1 = elem.val();
-
-                    $("#messages div.message-wrapper").each(function(i, x) {
-                        x = $(x);
-                        text2 = x.text();
-
-                        x.hide();
-                        //if (text2.match(new RegExp(text1)))
-                        if (text2.hasWords(text1))
-                            x.show();
-                    });
-                });
-            };
-
-            fnBind();
-            fnRefresh();
-        });
-
-    </script>
+    <script src="/js/session.js"></script>
 {% endblock scripts %}

@@ -3,11 +3,6 @@
     height: 1.5cm;
 }
 
-#app-title {
-    text-overflow: ellipsis;
-    max-width: 50%;
-}
-
 .w-1 {
     width: 1%;
 }
@@ -72,3 +67,20 @@
 .cursor-zoom-out {cursor: zoom-out;}
 
 .bg-gray-800 {background: #343a40;}
+
+.thread-icon {
+    /**/padding: 1em;
+    border-radius: 1em;
+    background: rgba(127, 127, 127, 0.25);
+    display: inline-block;
+    vertical-align: middle;
+}
+
+
+.navbar-brand {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 95%;
+    max-width: calc(100% - 1em);
+}

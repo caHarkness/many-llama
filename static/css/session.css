@@ -25,3 +25,17 @@
     margin-bottom: 1em;
     overflow-x: scroll;
 }
+
+#messages div.message-body textarea
+{
+    border: none;
+    outline: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Give the chat an iMessage-like appearance: */
+#messages div.message-wrapper div.message-body { border-radius: 2em; }
+#messages div.message-wrapper.query div.message-body { border-bottom-right-radius: 0; }
+#messages div.message-wrapper.reply div.message-body { border-bottom-left-radius: 0; }
+#messages div.message-wrapper div.message-footer { line-height: 1; }

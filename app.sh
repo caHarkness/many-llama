@@ -40,4 +40,4 @@ fi
 # Run the Python script:
 #python -u app.py
 
-flask --app app run --host=0.0.0.0 --port=8010
+flask --app app run --host=0.0.0.0 --port=8010 #--debug
