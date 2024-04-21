@@ -32,6 +32,8 @@
     outline: none;
     margin: 0;
     padding: 0;
+    background: none;
+    color: inherit;
 }
 
 /* Give the chat an iMessage-like appearance: */

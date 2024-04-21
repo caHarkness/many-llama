@@ -72,44 +72,16 @@
             {% endblock footer %}
         </div>
 
-        <script src="/js/Bs5Utils.js"></script>
-        
+        {% include "modals/confirmation.html" %}
 
-        <!-- Global error handling: -->
-        <script>
-            // Bs5Utils Setup:
-            Bs5Utils.defaults.toasts.position = "top-center";
-            Bs5Utils.defaults.toasts.container = "toast-container";
-            Bs5Utils.defaults.toasts.stacking = false;
-            bs5Utils = new Bs5Utils();
-
-            fnError = function(message)
-            {
-                bs5Utils.Snack.show(
-                    "danger",
-                    message,
-                    delay = 1000 * 3,
-                    dismissible = true
-                );
-
-                $("#toast-container button").remove();
-            };
-
-            window.onerror = function(error, url, line, column, message)
-            {
-                fnError(message);
-            };
-
-            var temp = console.error;
-            console.error = function(message)
-            {
-                temp(message);
-                fnError(message);
-            };
-        </script>
-
+        <!-- Our Classes: -->
         <script src="/js/FormValidator.js"></script>
+        <script src="/js/Input.js"></script>
+        <script src="/js/Common.js"></script>
+
+        <!-- Other: -->
         <script src="/js/strings.js"></script>
+        <script src="/js/errors.js"></script>
 
         {% block scripts %}
         {% endblock scripts %}

@@ -1,0 +1,128 @@
+{% set modal_id = "SessionSettingsModal" %}
+
+<div class="modal" id="{{ modal_id }}">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-4 offset-lg-1">
+                        <div class="form-group mb-2">
+                            <label class="mb-2">Session Name</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="name" fv-regex="{{ common.session_name_regex }}" fv-warning="The session name can only contain alphanumerics, hypens, and underscores.">
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="mb-2">User Name</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="user_name" fv-regex="^[A-Za-z0-9_\-\. ]{1,}$" fv-warning="The user name can only contain alphanumerics, hyphens, underscores, spaces, and periods.">
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="mb-2">Assistant Name</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="assistant_name" fv-regex="^[A-Za-z0-9_\-\. ]{1,}$" fv-warning="The assistant name can only contain alphanumerics, hyphens, underscores, spaces, and periods.">
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="mb-2">Context</label>
+                            <div class="input-group">
+                                <textarea class="form-control" name="context" fv-regex="^[\S\s]{1,}$"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="mb-2">Last N Messages</label>
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" name="last_n_messages" fv-regex="^(|-?[0-9]{1,})$">
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="locked" value="">
+                                <label class="form-check-label">Locked</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="display_as_contact" value="">
+                                <label class="form-check-label">Display as Contact</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div class="text-end">
+                    <a class="btn btn-danger me-1" onclick="{{ modal_id }}.fnDelete();">Delete</a>
+                    <a class="btn btn-outline-secondary me-1" data-bs-dismiss="modal">Close</a>
+                    <a class="btn btn-primary" onclick="{{ modal_id }}.fnSave();">Save</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function() {
+        {{ modal_id }} = {};
+        {{ modal_id }}.fnShow = function()
+        {
+            Input.fnSetValues("#{{ modal_id }}", Session.data);
+
+            $("#{{ modal_id }}")
+                .modal("show");
+
+            Input.fnSetTextareaHeight();
+        };
+
+        {{ modal_id }}.fnSave = function()
+        {
+            FormValidator.onPass(
+                "#{{ modal_id }}",
+                function()
+                {
+                    $.ajax({
+                        url: `/v1/session/${Session.fnGetName()}/settings`,
+                        type: "POST",
+                        headers: Common.fnGetAPIHeaders(),
+                        data: JSON.stringify(Input.fnGetValues("#{{ modal_id }}")),
+                        success: function(response)
+                        {
+                            window.location.href =
+                                `/session/${response.session_name}`;
+                        }
+                    });
+                });
+        };
+
+        {{ modal_id }}.fnDelete = function()
+        {
+            ConfirmationModal.fnShow(
+                "Are you sure you want to delete this session?",
+                {
+                    theme: "danger",
+                    buttonCaption: "Delete",
+                    callback: function()
+                    {
+                        $.ajax({
+                            url: `/v1/session/${Session.fnGetName()}/delete`,
+                            type: "POST",
+                            headers: Common.fnGetAPIHeaders(),
+                            data: JSON.stringify({
+                                session_name: Session.fnGetName()
+                            }),
+                            success: function(data)
+                            {
+                                window.location.href = `/`;
+                            }
+                        });
+                    }
+                });
+        };
+    });
+</script>

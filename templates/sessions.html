@@ -31,15 +31,21 @@
                         <tbody>
                             <tr>
                                 <td class="w-1">
-                                    <i class="fa fa-fw fa-{{ session.name[0].lower() }} thread-icon mx-3"></i>
+                                    <i class="fa fa-fw fa-{{ session.thread_name[0].lower() }} thread-icon mx-3"></i>
                                 </td>
                                 <td class="">
                                     <div>
-                                        <div><span class="fw-bold">{{ session.name }}</span></div>
+                                        <div>
+                                            <span class="fw-bold">{{ session.thread_name }}</span>
+                                        </div>
                                         <div class="text-muted">
                                             {% if session.last_message != None %}
                                                 {% if session.last_message.hidden == False %}
-                                                    <span>{{ session.last_message.author_name }}: </span>
+
+                                                    {% if session.display_as_contact == False or (session.display_as_contact == True and session.last_message.author == "user") %}
+                                                        <span>{{ session.last_message.author_name }}: </span>
+                                                    {% endif %}
+
                                                     <span>{{ session.last_message.body }}</span>
                                                 {% endif %}
                                             {% endif %}
@@ -72,7 +78,7 @@
                     .val()
                     .trim();
 
-                FormValidator.on("pass", function() {
+                FormValidator.onPass(function() {
                     window.location.href = `/session/${name}`;
                 });
             };

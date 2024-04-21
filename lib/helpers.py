@@ -4,6 +4,7 @@ import json
 import time
 import random
 import hashlib
+import asyncio
 from datetime import datetime
 from pathlib import Path
 
@@ -57,3 +58,17 @@ def new_md5():
     input_str = str(time.time())
     md5_hash = hashlib.md5(input_str.encode()).hexdigest()
     return md5_hash
+
+'''
+Threading related:
+'''
+LOCK = False
+async def thread_lock():
+    global LOCK
+    while LOCK is True:
+        await asyncio.sleep(1)
+    LOCK = True
+
+def thread_unlock():
+    global LOCK
+    LOCK = False

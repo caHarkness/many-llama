@@ -40,6 +40,7 @@ class Conversation:
         self.session.context            = safely_get(self.session, "context", DEFAULT_CONTEXT)
         self.session.last_n_messages    = safely_get(self.session, "last_n_messages", None)
         self.session.locked             = safely_get(self.session, "locked", False)
+        self.session.display_as_contact = safely_get(self.session, "display_as_contact", False)
         self.session.messages           = safely_get(self.session, "messages", [])
 
         if last_n_messages is not None:

@@ -1,34 +1,25 @@
 $(function() {
     FormValidator = {};
-
-    FormValidator.getInputs = function()
+    FormValidator.onPass = function(args)
     {
-        return $("*[fv-regex]");
-    };
+        var selector = $(document);
+        var callback = null;
 
-    // Compatibility for jquery-styled event registrations:
-    FormValidator.on = function(str, callback, extra = null)
-    {
-        switch (str)
+        if (arguments.length > 0)
+            callback = arguments[0];
+
+        if (arguments.length > 1)
         {
-            case "pass":
-                FormValidator.onPass(callback);
-                break;
-
-            case "confirm":
-                FormValidator.onConfirm(callback, extra);
-                break;
-
-            default:
-                console.log("Unhandled event '" + str + "'");
+            selector = arguments[0];
+            callback = arguments[1];
         }
-    };
 
-    FormValidator.onPass = function(callback)
-    {
         var pass = 1;
 
-        FormValidator.getInputs().each(function(i, x) {
+        if (typeof selector === "string")
+            selector = $(selector);
+
+        selector.find("*[fv-regex]").each(function(i, x) {
             if (pass == 0)
                 return;
 
@@ -45,9 +36,14 @@ $(function() {
             if (classStr == null || classStr.length < 1)
                 classStr = "border-danger";
 
-            // If no failure message is specified, use a generic message:
-            if (warningStr == null || warningStr.length < 1)
-                warningStr = "Please correct the highlighted input and try again";
+            if (warningStr == null)
+                warningStr = "";
+
+            warningStr = `${warningStr}. Please correct the highlighted input and try again.`;
+            warningStr = warningStr.trim();
+            warningStr = warningStr.replace(/^\. /gi, "");
+            warningStr = warningStr.replace(/\.{2,} /gi, ". ");
+            warningStr = warningStr.replace(/ {2,}/, " ");
 
             if (tagStr == "input")
                 evalStr = x.val();
@@ -79,26 +75,4 @@ $(function() {
             if (typeof callback === "function")
                 callback();
     };
-
-    FormValidator.onConfirm = function(callback, id)
-    {
-        if (typeof(FormValidator.clickCount) !== "object")
-            FormValidator.clickCount = {};
-
-        if (!(id in FormValidator.clickCount))
-            FormValidator.clickCount[id] = 3;
-
-        if (FormValidator.clickCount[id] > 1)
-        {
-            FormValidator.clickCount[id]--;
-            console.error(`Click ${FormValidator.clickCount[id]} more time(s) to do this`);
-            return;
-        }
-
-        if (typeof(callback) === "function")
-            callback();
-    };
-
-    if (FormValidator.getInputs().length > 0)
-        console.log("This page uses form validation via formvalidator.js");
 });

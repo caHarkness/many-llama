@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {{ common.session.name }}
+    {{ common.session.thread_name }}
 {% endblock %}
 
 {% block primary_action %}
@@ -9,37 +9,21 @@
 {% endblock primary_action %}
 
 {% block options %}
-    <a class="dropdown-item" onclick="fnEditPage();">
+    <a class="dropdown-item" onclick="SessionPage.fnEdit();">
         <i class="fa fa-fw fa-edit me-3"></i>
         <span>Edit</span>
     </a>
 
-    <a class="dropdown-item" onclick="fnShowSaveAsModal();">
-        <i class="fa fa-fw fa-save me-3"></i>
-        <span>Save As</span>
-    </a>
-
     {% if "last_n_messages" in common.session %}
         {% if common.session.last_n_messages.__class__.__name__ == "int" %}
-            <a class="dropdown-item" onclick="fnReset();">
+            <a class="dropdown-item text-warning" onclick="Session.fnReset();">
                 <i class="fa fa-fw fa-recycle me-3"></i>
                 <span>Reset</span>
             </a>
         {% endif %}
     {% endif %}
 
-    {% if
-            "locked" not in common.session
-        or common.session.locked == False
-        or common.session.locked == None
-    %}
-        <a class="dropdown-item" onclick="fnDelete();">
-            <i class="fa fa-fw fa-trash me-3"></i>
-            <span>Delete</span>
-        </a>
-    {% endif %}
-
-    <a class="dropdown-item" onclick="fnShowSettingsModal();">
+    <a class="dropdown-item" onclick="SessionSettingsModal.fnShow();">
         <i class="fa fa-fw fa-cog me-3"></i>
         <span>Settings</span>
     </a>
@@ -54,7 +38,7 @@
                 <div class="input-group">
                     <span class="input-group-text"><i class="fa fa-fw fa-search"></i></span>
                     <input type="text" class="form-control" name="search-text" placeholder="Search messages..." autocomplete="off">
-                    <a class="btn btn-secondary" onclick="fnClearSearch();"><i class="fa fa-fw fa-xmark"></i></a>
+                    <a class="btn btn-secondary" onclick="SessionPage.fnClearSearch();"><i class="fa fa-fw fa-xmark"></i></a>
                 </div>
             </div>
         </div>
@@ -76,7 +60,7 @@
         <div class="row">
             <div class="col-lg-5">
                 <div class="mt-2 mb-5">
-                    <div>This is the beginning of the <a href="javascript:void(0);" onclick="fnShowRenameModal();">{{ common.session_name }}</a> session.</div>
+                    <div>This is the beginning of the conversation.</div>
                     <hr />
                 </div>
 
@@ -96,7 +80,7 @@
                     <small>
                         <span></span>
                         <span class="message-author">nobody</span>
-                        <span class="message-control-link d-none">| <a href="javascript:void(0);" onclick="fnEditMessage(this);"><i class="fa fa-fw fa-edit"></i></a></span>
+                        <span class="message-control-link d-none">| <a href="javascript:void(0);" onclick="SessionMessage.fnEdit(this);"><i class="fa fa-fw fa-edit"></i></a></span>
                     </small>
                 </div>
                 <div class="message-control-container"></div>
@@ -104,79 +88,15 @@
         </div>
 
         <div class="message-controls my-2">
-            <a class="btn btn-sm btn-outline-success mb-1" onclick="fnSaveMessage(this);">Save <i class="fa fa-fw fa-save"></i></a>
-            <a class="btn btn-sm btn-outline-secondary mb-1 hide-message-btn" onclick="fnHideMessage(this, true);">Hide <i class="fa fa-fw fa-eye-slash"></i></a>
-            <a class="btn btn-sm btn-outline-secondary mb-1 unhide-message-btn" onclick="fnHideMessage(this, false);">Unhide <i class="fa fa-fw fa-eye"></i></a>
-            <a class="btn btn-sm btn-outline-danger mb-1" onclick="fnDeleteMessage(this);">Delete <i class="fa fa-fw fa-trash"></i></a>
-            <a class="btn btn-sm btn-outline-secondary mb-1" onclick="fnCancelEditMessage(this);">Cancel</i></a>
+            <a class="btn btn-sm btn-outline-success mb-1" onclick="SessionMessage.fnSave(this);"><i class="fa fa-fw fa-save"></i></a>
+            <a class="btn btn-sm btn-outline-secondary mb-1 hide-message-btn" onclick="SessionMessage.fnHide(this, true);"><i class="fa fa-fw fa-eye-slash"></i></a>
+            <a class="btn btn-sm btn-outline-secondary mb-1 unhide-message-btn" onclick="SessionMessage.fnHide(this, false);"><i class="fa fa-fw fa-eye"></i></a>
+            <a class="btn btn-sm btn-outline-danger mb-1" onclick="SessionMessage.fnDelete(this);"><i class="fa fa-fw fa-trash"></i></a>
+            <a class="btn btn-sm btn-outline-secondary mb-1" onclick="SessionMessage.fnCancelEdit(this);"></i><i class="fa fa-fw fa-xmark"></i></a>
         </div>
     </div>
 
-    <div class="modal" id="save-as-modal">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="mb-2">New Name</label>
-                        <div class="input-group mb-2">
-                            <input type="text" class="form-control" name="new-name" placeholder="Type a new name..." fv-regex="{{ common.session_name_regex }}" fv-warning="Only alphanumerics, hypens, and underscores are allowed." />
-                        </div>
-                    </div>
-
-                    <div class="text-end">
-                        <a class="btn btn-primary" onclick="fnSaveAs();">Save</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="conversation-settings-modal">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-body">
-
-
-                    <div class="form-group">
-                        <label class="mb-2">User Name</label>
-                        <div class="input-group mb-2">
-                            <input type="text" class="form-control" name="user_name">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="mb-2">Assistant Name</label>
-                        <div class="input-group mb-2">
-                            <input type="text" class="form-control" name="assistant_name">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="mb-2">Context</label>
-                        <div class="input-group mb-2">
-                            <textarea class="form-control" name="context"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="mb-2">Last N Messages</label>
-                        <div class="input-group mb-2">
-                            <input type="text" class="form-control" name="last_n_messages">
-                        </div>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="locked" value="">
-                        <label class="form-check-label">Locked</label>
-                    </div>
-
-                    <div class="text-end">
-                        <a class="btn btn-primary" onclick="fnSaveSettings();">Save</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% include "modals/session_settings.html" %}
 {% endblock body %}
 
 {% block footer %}
@@ -191,7 +111,7 @@
                 <div class="form-inline w-100">
                     <div class="input-group w-100">
                         <input type="text" class="form-control" name="user-input" placeholder="Type a message..." autocomplete="off">
-                        <a class="btn btn-primary" onclick="fnSend();"><i class="fa fa-fw fa-paper-plane"></i></a>
+                        <a class="btn btn-primary" onclick="Session.fnSend();"><i class="fa fa-fw fa-paper-plane"></i></a>
                     </div>
                 </div>
             </div>
@@ -201,5 +121,11 @@
 
 {% block scripts %}
     <!-- Page Functionality -->
+    <script src="/js/Session.js"></script>
+    <script src="/js/SessionMessage.js"></script>
+    <script src="/js/SessionPage.js"></script>
+    
+    <!--
     <script src="/js/session.js"></script>
+    -->
 {% endblock scripts %}
