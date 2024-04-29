@@ -1,0 +1,108 @@
+{% set modal_id = "FavoritesModal" %}
+
+<div class="modal fade align-bottom" id="{{ modal_id }}">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-body p-0">
+
+                    <div id="favorites">
+                    </div>                
+            </div>
+
+            <div class="modal-footer d-flex justify-content-between">
+                <div class="form-inline">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa fa-fw fa-search"></i></span>
+                        <input type="text" class="form-control" name="search-favorites" placeholder="Search favorites..." autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <a class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="favorite-template d-none favorite-template-instance py-3 border-top border-top-li" onclick="{{ modal_id }}.fnPick(this);">
+    <table class="w-100">
+        <tbody>
+            <tr>
+                <td class="w-1 px-3 align-top"><i class="fa fa-fw fa-quote-left"></i></td>
+                <td><span name="body"></span></td>
+                <td class="w-1 px-3"><i class="fa fa-fw fa-paper-plane"></i></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    $(function() {
+        {{ modal_id }} = {};
+        {{ modal_id }}.fnShow = function()
+        {
+            $("#{{ modal_id }}").modal("show");
+            {{ modal_id }}.fnRefresh();
+        };
+
+        {{ modal_id }}.fnRefresh = function()
+        {
+            $.ajax({
+                url: `/v1/favorites`,
+                type: "GET",
+                success: function(favorites)
+                {
+
+                    $("#favorites").html("");
+
+                    for (o in favorites)
+                    {
+                        o = favorites[o];
+
+                        //var elem = MessageTemplate.fnCreate(o);
+                        var elem = $(".favorite-template").first().clone();
+
+                        elem.removeClass("favorite-template d-none");
+                        elem.find("[name='body']")
+                            .first()
+                            .html(o.body);
+
+                        $("#favorites").first().append(elem);
+                    }
+                }
+            });
+        };
+
+        {{ modal_id }}.fnPick = function(x)
+        {
+            x = $(x);
+            var body = x.find("[name='body']")
+                .first()
+                .html();
+
+            $("[name='user-input']")
+                .first()
+                .val(body);
+
+            Session.fnSend();
+            $("#{{ modal_id }}").modal("hide");
+        };
+
+        $("[name='search-favorites']").unbind("input");
+        $("[name='search-favorites']").on("input", function() {
+            var elem = $(this);
+            var text1 = elem.val();
+
+            $("#favorites > div").each(function(i, x) {
+                x = $(x);
+                var text2 = x.text();
+
+                x.hide();
+                //if (text2.match(new RegExp(text1)))
+                if (text2.hasWords(text1))
+                    x.show();
+            });
+        });
+    });
+</script>

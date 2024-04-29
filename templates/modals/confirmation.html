@@ -6,7 +6,7 @@
 {% set default_btn_dismiss_caption = "Close" %}
 {% set default_btn_confirm_caption = "Confirm" %}
 
-<div class="modal fade bg-dark" id="{{ modal_id }}">
+<div class="modal fade" id="{{ modal_id }}">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="{{ default_modal_content_classes }}">
             <div class="modal-body">
@@ -32,6 +32,7 @@
             $("#{{ modal_id }}")
                 .find(".modal-content")
                 .first()
+                .css("zIndex", "-1000000000")
                 .attr("class", "")
                 .addClass("{{ default_modal_content_classes }}");
 

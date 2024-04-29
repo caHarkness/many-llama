@@ -10,6 +10,7 @@ from lib.classes import Conversation
 
 from munch import Munch
 from munch import munchify
+from markdown import markdown
 
 from app import llm
 from app import flask_app
@@ -41,3 +42,13 @@ def sessions_GET():
     except Exception as x:
         print(x)
         return ""
+
+@flask_app.template_global()
+def md(f_path):
+    try:
+        f_text = read_file(f_path, "")
+        f_markdown = markdown(f_text)
+        return f_markdown
+    except Exception as x:
+        print(x)
+        return str(x)

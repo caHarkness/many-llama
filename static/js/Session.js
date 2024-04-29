@@ -23,6 +23,13 @@ $(function() {
 
                 window.scrollTo(0, document.body.scrollHeight);
                 $("[name='user-input']").first().focus();
+
+                if (session.messages.length < 1)
+                {
+                    $(".show-starters-modal")
+                        .first()
+                        .removeClass("d-none");
+                }
             }
         });
     };
@@ -30,10 +37,10 @@ $(function() {
     Session.fnReset = function()
     {
         $.ajax({
-            url: `/v1/session/${Session.fnGetName()}/reset`,
+            url: `/v1/session/${Session.fnGetName()}`,
             type: "POST",
             headers: Common.fnGetAPIHeaders(),
-            data: JSON.stringify({}),
+            data: JSON.stringify({ reset: true }),
             success: function(data)
             {
                 // Reload the page:
@@ -80,7 +87,8 @@ $(function() {
             type: "POST",
             headers: Common.fnGetAPIHeaders(),
             data: JSON.stringify({
-                query: text
+                query: text,
+                get_reply: true
             }),
             success: function(data) { ajaxResponse = data; },
             error: function(xhr, x) { ajaxResponse = {}; }

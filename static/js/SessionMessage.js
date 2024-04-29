@@ -1,16 +1,15 @@
 $(function() {
     SessionMessage = {};
-
     SessionMessage.fnEdit = function(e)
     {
         e = $(e);
 
-        var parent = e.parents(".message-wrapper").first();
+        var parent = e.parents(".message-template-instance").first();
         var controlContainer = parent.find(".message-control-container").first();
 
         SessionMessage.fnCancelEdit();
 
-        var body = parent.find(".message-body").first();
+        var body = parent.find("[name='body']").first();
         var bodyWidth = body.width();
         var bodyHeight = body.height();
         var bodyText = body.text();
@@ -33,6 +32,22 @@ $(function() {
 
         var controls = $(".message-controls").first().clone();
 
+        controls.find(".favorite-message-btn").first().addClass("d-none");
+        controls.find(".unfavorite-message-btn").first().addClass("d-none");
+        controls.find(".hide-message-btn").first().addClass("d-none");
+        controls.find(".unhide-message-btn").first().addClass("d-none");
+
+        var isFavorite = parseInt(parent.find("[name='favorite']").first().html()) == 1;
+        var isHidden = parseInt(parent.find("[name='hidden']").first().html()) == 1;
+
+        if (isFavorite)
+                controls.find(".unfavorite-message-btn").first().removeClass("d-none");
+        else    controls.find(".favorite-message-btn").first().removeClass("d-none");
+
+        if (isHidden)
+                controls.find(".unhide-message-btn").first().removeClass("d-none");
+        else    controls.find(".hide-message-btn").first().removeClass("d-none");
+
         controlContainer.append(controls);
 
         textarea.focus();
@@ -42,9 +57,9 @@ $(function() {
 
     SessionMessage.fnCancelEdit = function()
     {
-        $("#messages div.message-wrapper").each(function(i, x) {
+        $(".message-template-instance").each(function(i, x) {
             x = $(x);
-            var body = x.find(".message-body").first();
+            var body = x.find("[name='body']").first();
             body.removeClass("w-75");
 
             var textarea = body.find("textarea");
@@ -53,7 +68,7 @@ $(function() {
                 textarea = textarea.first();
                 var textareaText = textarea.val();
                 //body.html(textareaText);
-                body.html(x.find(".message-body-original").html());
+                body.html(x.find("[name='body_original']").html());
             }
 
             x.find(".message-control-container")
@@ -65,13 +80,13 @@ $(function() {
     SessionMessage.fnSave = function(e)
     {
         e = $(e);
-        var parent = e.parents(".message-wrapper").first();
-        var id = parent.find(".message-id")
+        var parent = e.parents(".message-template-instance").first();
+        var id = parent.find("[name='id']")
             .first()
             .html()
             .trim();
 
-        var textarea = parent.find(".message-body textarea");
+        var textarea = parent.find("[name='body'] textarea");
 
         if (textarea.length < 1)
             return;
@@ -80,20 +95,47 @@ $(function() {
         textareaText = textarea.val();
 
         $.ajax({
-            url: `/v1/session/${Session.fnGetName()}/message/${id}/save`,
+            url: `/v1/session/${Session.fnGetName()}/message/${id}`,
             type: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            data: JSON.stringify({
-                body: textareaText
-            }),
-            success: function(data)
+            data: JSON.stringify({ body: textareaText }),
+            success: function(response)
             {
-                if (data.saved)
+                if (response.success)
                 {
-                    parent.find(".message-body-original").html(textareaText);
+                    parent.find("[name='body_original']").html(textareaText);
                     SessionMessage.fnCancelEdit();
+                }
+            }
+        });
+    };
+
+    SessionMessage.fnFavorite = function(e, favorite)
+    {
+        e = $(e);
+        var parent = e.parents(".message-template-instance").first();
+        var id = parent.find("[name='id']")
+            .first()
+            .html()
+            .trim();
+
+        $.ajax({
+            url: `/v1/session/${Session.fnGetName()}/message/${id}`,
+            type: "POST",
+            headers: { "Content-Type": "application/json" },
+            data: JSON.stringify({ favorite: favorite }),
+            success: function(response)
+            {
+                if (response.success)
+                {
+                    parent.find(".favorite-message-btn").first().addClass("d-none");
+                    parent.find(".unfavorite-message-btn").first().addClass("d-none");
+
+                    if (favorite)
+                            parent.find(".unfavorite-message-btn").first().removeClass("d-none");
+                    else    parent.find(".favorite-message-btn").first().removeClass("d-none");
                 }
             }
         });
@@ -102,34 +144,34 @@ $(function() {
     SessionMessage.fnHide = function(e, hidden)
     {
         e = $(e);
-        var parent = e.parents(".message-wrapper").first();
-        var id = parent.find(".message-id")
+        var parent = e.parents(".message-template-instance").first();
+        var id = parent.find("[name='id']")
             .first()
             .html()
             .trim();
 
         $.ajax({
-            url: `/v1/session/${Session.fnGetName()}/message/${id}/save`,
+            url: `/v1/session/${Session.fnGetName()}/message/${id}`,
             type: "POST",
             headers: { "Content-Type": "application/json" },
             data: JSON.stringify({ hidden: hidden }),
-            success: function(data)
+            success: function(response)
             {
-                if (data.saved)
+                if (response.success)
                 {
                     parent.removeClass("hidden-message opacity-50");
-                    parent.find("hide-message-btn").first().addClass("d-none");
-                    parent.find("unhide-message-btn").first().addClass("d-none");
+                    parent.find(".hide-message-btn").first().addClass("d-none");
+                    parent.find(".unhide-message-btn").first().addClass("d-none");
 
                     if (hidden)
                     {
                         parent.addClass("hidden-message opacity-50");
-                        parent.find("unhide-message-btn").first().removeClass("d-none");
+                        parent.find(".unhide-message-btn").first().removeClass("d-none");
                     }
 
                     else
                     {
-                        parent.find("hide-message-btn").first().removeClass("d-none");
+                        parent.find(".hide-message-btn").first().removeClass("d-none");
                     }
 
                 }
@@ -140,24 +182,22 @@ $(function() {
     SessionMessage.fnDelete = function(e)
     {
         e = $(e);
-        var parent = e.parents(".message-wrapper").first();
-        var id = parent.find(".message-id")
+        var parent = e.parents(".message-template-instance").first();
+        var id = parent.find("[name='id']")
             .first()
             .html()
             .trim();
 
         $.ajax({
-            url: `/v1/session/${Session.fnGetName()}/message/${id}/delete`,
+            url: `/v1/session/${Session.fnGetName()}/message/${id}`,
             type: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            data: JSON.stringify({
-                session_name: Session.fnGetName()
-            }),
-            success: function(data)
+            data: JSON.stringify({ delete: true }),
+            success: function(response)
             {
-                if (data.deleted)
+                if (response.success)
                     parent.remove();
             }
         });

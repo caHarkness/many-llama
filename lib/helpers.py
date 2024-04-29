@@ -14,10 +14,10 @@ for x in os.environ:
 # Return first non-null value
 # https://stackoverflow.com/a/16247152
 def coalesce(*arg):
-  for el in arg:
-    if el is not None:
-      return el
-  return None
+    for el in arg:
+        if el is not None:
+            return el
+    return None
 
 def safely_get(input_array, key, default_value):
     if key in input_array:

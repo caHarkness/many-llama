@@ -1,82 +1,14 @@
+/* Make navbars and the required space underneath them the same size: */
 .navbar,
 .navbar-spacing {
     height: 1.5cm;
 }
 
-.w-1 {
-    width: 1%;
-}
+/* Bootstrap-like extras: */
+.w-1 { width: 1%; }
+.bg-gray-800 { background: #343a40; }
 
-.overflow-hidden {
-    max-width: 500px;
-    overflow-x: hidden;
-    white-space: nowrap;
-    position: relative;
-    &:after {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 30%;
-        height: 100%;
-        @include background-image(linear-gradient(left, rgba(255,255,255,0) 0%, white 80%, white 100%));
-        pointer-events: none;
-    }
-}
-
-.highlight-hover:hover
-{
-    background: rgba(127, 127, 127, 0.0625);
-}
-
-/* https://stackoverflow.com/a/57801395 */
-.cursor-alias {cursor: alias;}
-.cursor-all-scroll {cursor: all-scroll;}
-.cursor-auto {cursor: auto;}
-.cursor-cell {cursor: cell;}
-.cursor-context-menu {cursor: context-menu;}
-.cursor-col-resize {cursor: col-resize;}
-.cursor-copy {cursor: copy;}
-.cursor-crosshair {cursor: crosshair;}
-.cursor-default {cursor: default;}
-.cursor-e-resize {cursor: e-resize;}
-.cursor-ew-resize {cursor: ew-resize;}
-.cursor-grab {cursor: -webkit-grab; cursor: grab;}
-.cursor-grabbing {cursor: -webkit-grabbing; cursor: grabbing;}
-.cursor-help {cursor: help;}
-.cursor-move {cursor: move;}
-.cursor-n-resize {cursor: n-resize;}
-.cursor-ne-resize {cursor: ne-resize;}
-.cursor-nesw-resize {cursor: nesw-resize;}
-.cursor-ns-resize {cursor: ns-resize;}
-.cursor-nw-resize {cursor: nw-resize;}
-.cursor-nwse-resize {cursor: nwse-resize;}
-.cursor-no-drop {cursor: no-drop;}
-.cursor-none {cursor: none;}
-.cursor-not-allowed {cursor: not-allowed;}
-.cursor-pointer {cursor: pointer;}
-.cursor-progress {cursor: progress;}
-.cursor-row-resize {cursor: row-resize;}
-.cursor-s-resize {cursor: s-resize;}
-.cursor-se-resize {cursor: se-resize;}
-.cursor-sw-resize {cursor: sw-resize;}
-.cursor-text {cursor: text;}
-.cursor-w-resize {cursor: w-resize;}
-.cursor-wait {cursor: wait;}
-.cursor-zoom-in {cursor: zoom-in;}
-.cursor-zoom-out {cursor: zoom-out;}
-
-.bg-gray-800 {background: #343a40;}
-
-.thread-icon {
-    /**/padding: 1em;
-    border-radius: 1em;
-    background: rgba(127, 127, 127, 0.25);
-    display: inline-block;
-    vertical-align: middle;
-}
-
-
+/* Bootstrap: cut off large title bar text: */
 .navbar-brand {
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -84,3 +16,14 @@
     max-width: 95%;
     max-width: calc(100% - 1em);
 }
+
+/* Make elements with onclick obviously clickable: */
+*[onclick] { cursor: pointer; }
+div[onclick]:hover { background: rgba(127, 127, 127, 0.0625); }
+
+/* Bootstrap: Allow modals and their backdrop to be stacked: */
+.modal-backdrop.show { opacity: 0; }
+.modal { background: rgba(0, 0, 0, 0.5); }
+
+/* Remove the top border from list-like elements with a Bootstrap "border-top" class: */
+.border-top-li:first-child { border-top: 0 !important; }

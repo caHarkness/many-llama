@@ -19,12 +19,18 @@ $(function() {
 
                 while (true)
                 {
-                    if (x.prop("tagName") == "INPUT")
+                    if (["INPUT"].includes(x.prop("tagName")))
                         if (x.attr("type").toLowerCase() == "checkbox")
                         {
                             value = x.is(":checked");
                             break;
                         }
+
+                    if (["DIV", "SPAN"].includes(x.prop("tagName")))
+                    {
+                        value = x.html();
+                        break;
+                    }
 
                     if (typeof(x.val) === "function")
                     {
@@ -43,7 +49,16 @@ $(function() {
                 }
 
                 if (`${value}`.match(/^-?[0-9]{1,}$/g))
+                {
                     value = parseInt(value);
+
+                    if (x.attr("data-type") == "boolean")
+                    {
+                        if (value == 1)
+                                value = true;
+                        else    value = false;
+                    }
+                }
 
                 if (`${value}`.match(/^-?[0-9]{1,}(\.[0-9]{1,})?$/g))
                     value = parseFloat(value);
@@ -74,19 +89,33 @@ $(function() {
 
             var input = selector.find(`[name='${key}']`);
 
+            console.log(input);
+
             if (input.length > 0)
             {
-
                 while (true)
                 {
                     input = input.first();
 
-                    if (input.prop("tagName") === "INPUT")
+                    if (["INPUT"].includes(input.prop("tagName")))
                         if (input.attr("type").toLowerCase() == "checkbox")
                         {
                             input.prop("checked", value);
                             break;
                         }
+
+                    if (typeof value === "boolean")
+                    {
+                        if (value)
+                                value = 1;
+                        else    value = 0;
+                    }
+
+                    if (["DIV", "SPAN"].includes(input.prop("tagName")))
+                    {
+                        input.html(value);
+                        break;
+                    }
 
                     if (typeof input.val === "function")
                     {
@@ -112,13 +141,14 @@ $(function() {
     {
         $("textarea").each(function(i, x) {
             x = $(x);
+
+            x.css("minHeight", "0px");
             x.css(
                 "minHeight",
                 x[0].scrollHeight +
                     parseInt(x.css("paddingTop")) +
                     parseInt(x.css("paddingBottom")) +
                     "px"
-
                 );
         });
     };

@@ -1,6 +1,5 @@
 $(function() {
     SessionPage = {};
-
     SessionPage.fnClearSearch = function()
     {
         $("[name='search-text']")
@@ -24,28 +23,7 @@ $(function() {
         if (typeof(m) === "undefined")
             return;
 
-        var div = $($(".message-template").first().html());
-
-        if (m.hidden)
-            div.addClass("hidden-message d-none opacity-50");
-
-        div.find(".message-id").first().html(m.id);
-        div.find(".message-author").first().html(m.author_name);
-        div.find(".message-body").first().html(m.body);
-        div.find(".message-body-original").first().html(m.body);
-
-        switch (m.type)
-        {
-            case "query":
-                div.addClass("query");
-                div.find(".message-body").first().addClass("alert alert-primary mb-1");
-                break;
-
-            case "reply":
-                div.addClass("reply");
-                div.find(".message-body").first().addClass("alert alert-secondary mb-1");
-                break;
-        }
+        var div = MessageTemplate.fnCreate(m);
 
         if (append)
             $("#messages").first().append(div);
@@ -66,11 +44,46 @@ $(function() {
 
     SessionPage.fnBind = function()
     {
+        /*
+        ShiftHeld = false;
+
+        $(document).unbind("keydown");
+        $(document).unbind("keyup");
+        
+        $(document).on(
+            "keyup keydown",
+            function(e)
+            {
+                ShiftHeld = e.shiftKey;
+            });
+        */
+
+        // Unused for now, we're sticking with input over textarea:
+        /*
+        $("[name='user-input']").on("input", function(e) {
+            var input = $("[name='user-input']").first();
+            input.css("minHeight", "0px");
+
+            // var newHeight = input[0].scrollHeight +
+            //    parseInt(input.css("paddingTop")) +
+            //    parseInt(input.css("paddingBottom")) +
+            //    "px";
+
+            var newHeight = (input[0].scrollHeight + 4) + "px";
+
+            input.css("minHeight", newHeight);
+
+            $("#bottom-user-input-spacing").css(
+                "height",
+                $("#bottom-user-input-container").height() + "px");
+        });
+        */
+
         $(document).unbind("keyup");
         $(document).on("keyup", function(e) {
             if (e.keyCode == 13)
-                if ($("[name='user-input']").is(":focus"))
-                    Session.fnSend();
+                    if ($("[name='user-input']").is(":focus"))
+                        Session.fnSend();
         });
 
         $("[name='search-text']").unbind("input");

@@ -55,4 +55,12 @@ def get_common_vars():
     common.sessions = sessions
     common.session_name_regex = "^[A-Za-z0-9_\\-]{1,}$"
 
+    favorites = []
+    for session in common.sessions:
+        for message in session.messages:
+            if "favorite" in message:
+                if message["favorite"] == True:
+                    favorites.append(message)
+
+    common.favorites = favorites
     return common

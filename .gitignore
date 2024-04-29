@@ -3,3 +3,5 @@
 /sessions/
 /venv/
 __pycache__/
+/token.txt
+/extra/

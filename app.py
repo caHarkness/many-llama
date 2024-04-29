@@ -2,6 +2,7 @@
 import os
 import asyncio
 import re
+import logging
 
 # Project libraries:
 from lib.helpers import *
@@ -10,6 +11,10 @@ from lib.classes import Conversation
 # Pip libraries:
 from llama_cpp import Llama
 from flask import Flask
+from flask import redirect
+
+# Set logging level:
+logging.basicConfig(level=logging.DEBUG)
 
 # Load the LLM model:
 llm = Llama(
@@ -21,8 +26,13 @@ llm = Llama(
 # Prepare the Flask app:
 flask_app = Flask(__name__, static_url_path="", static_folder="static", template_folder="templates")
 flask_app.config["TEMPLATES_AUTO_RELOAD"] = True
+flask_app.debug = True
+flask_app.logger.setLevel(logging.DEBUG)
 
 # Load the Flask routing:
-from lib.redirects import *
 from lib.views import *
 from lib.v1 import *
+
+@flask_app.route("/")
+def main():
+    return redirect("/sessions")

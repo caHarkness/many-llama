@@ -1,0 +1,131 @@
+<!-- templates/common/message_template.html -->
+
+<style>
+    div.message-template-instance div[name="body"]
+    {
+        text-align: left;
+        max-width: 75%;
+        padding: 1em;
+        display: inline-block;
+    }
+
+    div.message-template-instance {
+        margin-bottom: 1em;
+    }
+
+    div.message-template-instance.query {
+        text-align: right;
+        margin-left: auto;
+        margin-right: 0;
+    }
+
+    div.message-template-instance div[name="body"] pre {
+        /*padding: 0.5em;
+        background: rgba(0, 0, 0, 0.25);*/
+        margin: 0;
+        /**/margin-top: 1em;
+        margin-bottom: 1em;
+        overflow-x: scroll;
+    }
+
+    div.message-template-instance div[name="body"] textarea
+    {
+        border: none;
+        outline: none;
+        margin: 0;
+        padding: 0;
+        background: none;
+        color: inherit;
+    }
+
+    /* Give the chat an iMessage-like appearance: */
+    div.message-template-instance div[name="body"] { border-radius: 2em; }
+    div.message-template-instance.query div[name="body"] { border-bottom-right-radius: 0; }
+    div.message-template-instance.reply div[name="body"] { border-bottom-left-radius: 0; }
+    div.message-template-instance div.message-footer { line-height: 1; }
+</style>
+
+
+<div class="message-template d-none message-template-instance">
+    <div class="d-none" name="id">-1</div>
+    <div class="d-none" name="author"></div>
+    <div class="d-none" name="favorite" data-type="boolean"></div>
+    <div class="d-none" name="hidden" data-type="boolean"></div>
+    <div class="d-none" name="body_original">No message content...</div>
+
+    <div class="mb-0" name="body">No message content...</div>
+    
+    <div class="message-footer text-muted align-text-top">
+        <small>
+            <span></span>
+            <span class="d-none"><i class="fa fa-fw fa-star"></i> |</span>
+            <span class="message-author" name="author_name">nobody</span>
+            <span class="message-control-link d-none">| <a href="javascript:void(0);" onclick="SessionMessage.fnEdit(this);"><i class="fa fa-fw fa-edit"></i></a></span>
+        </small>
+    </div>
+    
+    <div class="message-control-container"></div>
+</div>
+
+
+<script>
+    $(function() {
+        if (typeof MessageTemplate === "undefined")
+            MessageTemplate = {};
+
+        // Update an existing element with a message JSON object:
+        MessageTemplate.fnUpdate = function(elem, o)
+        {
+            if (typeof elem === "string")
+                elem = $(elem);
+
+            if (!(elem instanceof jQuery))
+                throw new Error("elem is not a jQuery object");
+
+            o.body_original = o.body;
+            Input.fnSetValues(elem, o);
+
+            if (o.hidden)
+                elem.addClass("hidden-message d-none opacity-50");
+
+            if (o.favorite)
+                elem.find(".favorite-indicator").removeClass("d-none");
+
+            var body = elem.find("[name='body']").first();
+
+            switch (o.type)
+            {
+                case "query":
+                    body.addClass("alert alert-primary mb-1");
+                    break;
+
+                case "reply":
+                    body.addClass("alert alert-secondary mb-1");
+                    break;
+
+            }
+
+            elem.addClass(o.type);
+            console.log(o.body);
+        };
+
+        // Create a message element using a message JSON object:
+        MessageTemplate.fnCreate = function(o)
+        {
+            var elem =
+                $(".message-template")
+                    .first()
+                    .clone();
+
+            elem.removeClass("message-template d-none");
+
+            MessageTemplate.fnUpdate(elem, o);
+            return elem;
+        };
+
+        MessageTemplate.fnGetObject = function(elem)
+        {
+            return Input.fnGetValues(elem);
+        };
+    });
+</script>

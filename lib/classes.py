@@ -9,6 +9,10 @@ from lib.helpers import *
 from munch import Munch
 from munch import munchify
 
+DEFAULT_USER_NAME       = safely_get(globals(), "DEFAULT_USER_NAME",        "User")
+DEFAULT_ASSISTANT_NAME  = safely_get(globals(), "DEFAULT_ASSISTANT_NAME",   "Assistant")
+DEFAULT_CONTEXT         = safely_get(globals(), "DEFAULT_CONTEXT",          "This is a conversation between a user named {user_name} and another user named {assistant_name}. {assistant_name} is short, stern, and straight to the point. {assistant_name} is almost impolite and seemingly uninterested, but will have a change of attitude if {user_name} asks. If {assistant_name} is not 100 percent confident of its answer, it will reply stating it does not know and will not try to guess the answer.")
+
 class Conversation:
     def __init__(self, session_name, llm=None):
         self.session        = Munch()
@@ -39,7 +43,6 @@ class Conversation:
         self.session.assistant_name     = safely_get(self.session, "assistant_name", DEFAULT_ASSISTANT_NAME)
         self.session.context            = safely_get(self.session, "context", DEFAULT_CONTEXT)
         self.session.last_n_messages    = safely_get(self.session, "last_n_messages", None)
-        self.session.locked             = safely_get(self.session, "locked", False)
         self.session.display_as_contact = safely_get(self.session, "display_as_contact", False)
         self.session.messages           = safely_get(self.session, "messages", [])
 
@@ -91,13 +94,9 @@ class Conversation:
 
     def delete(self):
         try:
-            # Exit early if locked:
-            if "locked" in self.session:
-                if self.session.locked == True:
-                    return
-
             os.unlink(self.get_file_path())
-        except:
+        except Exception as x:
+            print(x)
             pass
 
     def get_formatted_context(self):
@@ -109,7 +108,7 @@ class Conversation:
 
     # The following template comes from:
     # https://huggingface.co/TheBloke/dolphin-2.1-mistral-7B-GGUF
-    def build_prompt_chatml(self, user_input):
+    def build_prompt_chatml(self):
         context = self.get_formatted_context()
         output = f"<|im_start|>system\n{context}<|im_end|>\n"
 
@@ -127,11 +126,12 @@ class Conversation:
         author = "assistant" if author == self.session.assistant_name else author
 
         self.session.messages.append({
-            "id": self.get_next_message_id(),
-            "author": author,
-            "body": body,
-            "time": get_timestamp(),
-            "hidden": False
+            "id":       self.get_next_message_id(),
+            "author":   author,
+            "body":     body,
+            "time":     get_timestamp(),
+            "favorite": False,
+            "hidden":   False
         })
 
         return self.get_last_message()
@@ -143,13 +143,13 @@ class Conversation:
             message = messages[-1]
         return message
 
-    def get_response(self, user_input):
+    def get_reply(self):
         if self.llm is None:
             raise Exception("Conversation LLM is None")
 
         output = ""
         generation = self.llm(
-            self.build_prompt_chatml(user_input),
+            self.build_prompt_chatml(),
             max_tokens=12288,
             stop=["<|im_end|>"],
             echo=False,

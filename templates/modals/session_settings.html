@@ -1,11 +1,13 @@
 {% set modal_id = "SessionSettingsModal" %}
 
-<div class="modal" id="{{ modal_id }}">
-    <div class="modal-dialog modal-dialog-centered modal-fullscreen modal-dialog-scrollable">
+<div class="modal fade" id="{{ modal_id }}">
+    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-body">
+
                 <div class="row">
-                    <div class="col-lg-4 offset-lg-1">
+                    <div class="col-lg-5 offset-lg-1">
+
                         <div class="form-group mb-2">
                             <label class="mb-2">Session Name</label>
                             <div class="input-group">
@@ -43,17 +45,14 @@
 
                         <div class="mb-2">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="locked" value="">
-                                <label class="form-check-label">Locked</label>
-                            </div>
-
-                            <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="display_as_contact" value="">
                                 <label class="form-check-label">Display as Contact</label>
                             </div>
                         </div>
+
                     </div>
                 </div>
+
             </div>
 
             <div class="modal-footer">
@@ -75,9 +74,10 @@
             Input.fnSetValues("#{{ modal_id }}", Session.data);
 
             $("#{{ modal_id }}")
-                .modal("show");
-
-            Input.fnSetTextareaHeight();
+                .modal("show")
+                .on("shown.bs.modal", function() {
+                    Input.fnSetTextareaHeight();
+                });
         };
 
         {{ modal_id }}.fnSave = function()
@@ -87,10 +87,10 @@
                 function()
                 {
                     $.ajax({
-                        url: `/v1/session/${Session.fnGetName()}/settings`,
+                        url: `/v1/session/${Session.fnGetName()}`,
                         type: "POST",
                         headers: Common.fnGetAPIHeaders(),
-                        data: JSON.stringify(Input.fnGetValues("#{{ modal_id }}")),
+                        data: JSON.stringify({ settings: Input.fnGetValues("#{{ modal_id }}") }),
                         success: function(response)
                         {
                             window.location.href =
@@ -110,15 +110,13 @@
                     callback: function()
                     {
                         $.ajax({
-                            url: `/v1/session/${Session.fnGetName()}/delete`,
+                            url: `/v1/session/${Session.fnGetName()}`,
                             type: "POST",
                             headers: Common.fnGetAPIHeaders(),
-                            data: JSON.stringify({
-                                session_name: Session.fnGetName()
-                            }),
+                            data: JSON.stringify({ delete: true }),
                             success: function(data)
                             {
-                                window.location.href = `/`;
+                                window.location.href = "/";
                             }
                         });
                     }
