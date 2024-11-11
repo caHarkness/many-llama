@@ -31,7 +31,7 @@ def make_chat_function(chat_name):
                 convo.save(new_chat_name=new_name)
                 convo.delete()
                 make_chat_pages()
-                st.switch_page(globals()[f"session_{new_name}_page"])
+                st.switch_page(globals()[f"chat_{new_name}_page"])
 
         @st.dialog("Save as")
         def save_as():
@@ -39,7 +39,7 @@ def make_chat_function(chat_name):
             if st.button("Save"):
                 convo.save(new_chat_name=new_name)
                 make_chat_pages()
-                st.switch_page(globals()[f"session_{new_name}_page"])
+                st.switch_page(globals()[f"chat_{new_name}_page"])
 
         @st.dialog("Delete")
         def delete():
@@ -116,13 +116,13 @@ def get_sorted_chats():
                 c = Chat(chat_name)
                 chats.append(c)
 
-    def test(chat):
+    def sort_by_time(chat):
         m = chat.get_last_message()
         if m is not None:
             return m["time"]
         return 0
 
-    chats = sorted(chats, key=lambda chat: test(chat), reverse=True)
+    chats = sorted(chats, key=lambda chat: sort_by_time(chat), reverse=True)
     return chats
 
 def make_chat_pages():
@@ -158,14 +158,8 @@ def make_chat_pages():
     return pages
 
 def home():
-    chat_name = st.text_input("Name", value="default")
-
+    chat_name   = st.text_input("Name", value="default")
     new_context = st.text_area("Context", value=st.session_state.settings["default_context"])
-        #st.caption("The system message fed to the model for instructions")
-
-    #with st.expander("Advanced"):
-    #    new_context = st.text_area("Context", value=st.session_state.settings["default_context"])
-    #    st.caption("The system message fed to the model for instructions")
 
     if st.button("Create"):
         c = Chat(chat_name)
@@ -203,7 +197,7 @@ globals()["about_page"]     = st.Page(about, title="About", icon=":material/info
 chats_term = "Chats"
 if "search_query" in st.session_state:
     if len(st.session_state.search_query) > 0:
-        sessions_term = "Results"
+        chats_term = "Results"
 
 pg = st.navigation({
     "File":     [home_page, settings_page, about_page],
@@ -215,7 +209,7 @@ if st.sidebar.button("Go"):
     st.session_state.search_query = search_query
     st.rerun()
 
-st.sidebar.caption("Many Llama v1.0")
+st.sidebar.caption("Many Llama v1.0.100")
 
 if st.sidebar.button("Reload", use_container_width=True):
     st.write("Refresh this page manually.")
