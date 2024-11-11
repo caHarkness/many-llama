@@ -1,5 +1,9 @@
+/cuda126/
 /models/
 /scripts/
 /sessions/
+/chats/
 /venv/
+/python/
 __pycache__/
+/settings.json
