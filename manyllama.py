@@ -260,6 +260,33 @@ class Chat:
             output = output + token
         return output
 
+    def contains_answer_to(self, question, return_answer=False):
+
+        if not re.search(r"\?$", question):
+            question = question + "?"
+
+        chat = copy.copy(self)
+        chat_name = chat.data["name"]
+        chat.add_message(chat.data["user_name"], f"Yes or no ONLY. Do not say anything else. Does this conversation answer the following question: {question}")
+
+        reply = chat.get_reply()
+        chat.data["messages"] = chat.data["messages"][:-1]
+        # chat.add_message(chat.data["assistant_name"], reply)
+
+        contains_answer = False
+        answer          = None
+
+        if re.search(r"^yes", reply.lower()):
+            contains_answer = True
+
+            if return_answer:
+                chat.add_message(chat.data["user_name"], f"{question} Keep your answer short. Along with your answer, tell that it came from the chat named \"{chat_name}\". Keep the sentence organic.")
+                answer = chat.get_reply()
+
+        return (contains_answer, answer)
+
+
+
 # Make module testable via the cli:
 if __name__ == "__main__":
     chat_name = "default"

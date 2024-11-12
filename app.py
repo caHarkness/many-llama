@@ -172,6 +172,34 @@ def home():
         make_chat_pages()
         st.switch_page(globals()[f"chat_{chat_name}_page"])
 
+def ask():
+
+
+    # Accept user input
+    if q := st.chat_input("Say something"):
+        question = q
+
+        with st.chat_message("user"):
+            st.write(question)
+
+        chats = get_sorted_chats()
+        total_text = ""
+
+        with st.spinner("Fetching"):
+            for chat in chats:
+                contains_answer, answer = chat.contains_answer_to(question, return_answer=True)
+                chat_name = chat.data["name"]
+
+                if contains_answer:
+                    total_text = f"{total_text}\n\n{answer}"
+
+        c = Chat("summarizer")
+        c.add_message(c.data["user_name"], f"Summarize the following: \n\n {total_text}")
+
+        with st.chat_message("assistant"):
+            reply = st.write_stream(c.stream_reply())
+
+
 
 def settings():
     default_context = st.text_area("Default Context", value=st.session_state.settings["default_context"])
@@ -189,10 +217,10 @@ def about():
     markdown_text = Helpers.read_file("README.md")
     st.markdown(markdown_text)
         
-
 globals()["home_page"]      = st.Page(home, title="New", icon=":material/post_add:")
 globals()["settings_page"]  = st.Page(settings, title="Settings", icon=":material/settings:")
 globals()["about_page"]     = st.Page(about, title="About", icon=":material/info:")
+globals()["ask_page"]       = st.Page(ask, title="Ask", icon=":material/campaign:")
 
 chats_term = "Chats"
 if "search_query" in st.session_state:
@@ -200,7 +228,7 @@ if "search_query" in st.session_state:
         chats_term = "Results"
 
 pg = st.navigation({
-    "File":     [home_page, settings_page, about_page],
+    "File":     [home_page, settings_page, about_page, ask_page],
     chats_term: make_chat_pages()
 })
 
