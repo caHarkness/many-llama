@@ -15,29 +15,75 @@ from manyllama import Chat
 for x in os.environ:
     globals()[x] = os.environ[x]
 
-st.session_state.settings = Helpers.read_json("settings.json", {
-    "default_context": DEFAULT_CONTEXT
-})
+class Settings():
+    def load():
+        st.session_state.settings = Helpers.read_json("settings.json", {
+            "default_context": DEFAULT_CONTEXT,
+            "developer_mode": False
+        })
+
+    def save():
+        Helpers.write_file(
+            "settings.json",
+            json.dumps(st.session_state.settings, indent=4))
+
+        Settings.load()
+
+    def get(key, default_value=None, save=False):
+        if "settings" not in st.session_state:
+            Settings.load()
+
+        if key in st.session_state.settings:
+            return st.session_state.settings[key]
+        else:
+            if save:
+                Settings.set(key, default_value)
+            return default_value
+
+    def set(key, value):
+        if "settings" not in st.session_state:
+            Settings.load()
+        st.session_state.settings[key] = value
+        Settings.save()
+
+    def render(name, key, kind, options={}):
+        setting_key = f"setting_{key}"
+
+        def on_change():
+            val = st.session_state[setting_key]
+            print(f"Set {key} to {val}")
+            Settings.set(key, val)
+
+        kind(
+            name,
+            value=Settings.get(key),
+            key=setting_key,
+            on_change=on_change,
+            **options)
+            
+
+
+Settings.load()
 
 # Called 
 def make_chat_function(chat_name):
     def _callable():
         convo = Chat(chat_name)
 
-        @st.dialog("Rename")
-        def rename():
-            new_name = st.text_input("Name", value=chat_name)
-            if st.button("Save"):
-                convo.save(new_chat_name=new_name)
-                convo.delete()
-                make_chat_pages()
-                st.switch_page(globals()[f"chat_{new_name}_page"])
+        @st.dialog("Edit Chat")
+        def edit_chat():
 
-        @st.dialog("Save as")
-        def save_as():
-            new_name = st.text_input("Name", value=chat_name)
+            new_name    = st.text_input("Name", value=chat_name)
+            new_context = st.text_area("Context", value=convo.data["context"])
+            save_as     = st.toggle("Save as a copy", value=False)
+
             if st.button("Save"):
+                convo.data["context"] = new_context
                 convo.save(new_chat_name=new_name)
+
+                if save_as == False:
+                    convo.delete()
+
                 make_chat_pages()
                 st.switch_page(globals()[f"chat_{new_name}_page"])
 
@@ -48,7 +94,6 @@ def make_chat_function(chat_name):
             if st.button("Delete"):
                 convo.delete()
                 st.switch_page(home_page)
-
 
         # Begin rendering the page's content:
         st.title(chat_name)
@@ -71,8 +116,13 @@ def make_chat_function(chat_name):
             convo.add_message(convo.data["user_name"], query)
             convo.save()
 
-            st.session_state.run = 1
+            if Settings.get("autorun", True):
+                st.session_state.run = 1
+
             st.rerun()
+
+        def run():
+            st.session_state.run = 1
 
         def undo():
             while True:
@@ -96,12 +146,16 @@ def make_chat_function(chat_name):
                 #st.rerun()
 
         with st.popover("...") as pop:
-            if len(convo.get_messages()) > 0: st.button("Undo", on_click=undo, use_container_width=True)
-            if len(convo.get_messages()) > 0: st.button("Redo", on_click=redo, use_container_width=True)
+            if Settings.get("autorun", True) == False:
+                st.button("Run", on_click=run, use_container_width=True, icon=":material/play_arrow:")
 
-            st.button("Rename", on_click=rename, use_container_width=True)
-            st.button("Save as", on_click=save_as, use_container_width=True)
-            st.button("Delete", on_click=delete, use_container_width=True)
+            if len(convo.get_messages()) > 0:
+                st.button("Undo", on_click=undo, use_container_width=True, icon=":material/undo:")
+                st.button("Redo", on_click=redo, use_container_width=True, icon=":material/replay:")
+
+            st.button("Edit", on_click=edit_chat, use_container_width=True, icon=":material/description:")
+            st.button("Delete", on_click=delete, use_container_width=True, icon=":material/delete:")
+            
 
     _callable.__name__ = f"chat_{chat_name}"
     return _callable
@@ -157,7 +211,26 @@ def make_chat_pages():
 
     return pages
 
-def home():
+
+
+def new():
+    if Settings.get("quick_create", True):
+        st.title("New")
+        st.caption("This is the beginning of the conversation")
+
+        # Accept user input
+        if query := st.chat_input("Say something"):
+            c = Chat()
+            chat_name = c.data["name"]
+            c.data["context"] = Settings.get("default_context")
+            c.add_message(c.data["user_name"], query)
+            c.save()
+            make_chat_pages()
+            st.session_state.run = 1
+            st.switch_page(globals()[f"chat_{chat_name}_page"])
+
+        return
+
     chat_name   = st.text_input("Name", value="default")
     new_context = st.text_area("Context", value=st.session_state.settings["default_context"])
 
@@ -172,12 +245,24 @@ def home():
         make_chat_pages()
         st.switch_page(globals()[f"chat_{chat_name}_page"])
 
+def settings():
+    Settings.render("Default Context", "default_context", st.text_area)
+    Settings.render("Quick Create", "quick_create", st.toggle)
+    Settings.render("Show Search", "show_search", st.toggle)
+    Settings.render("Developer Mode", "developer_mode", st.toggle)
+
 def ask():
-
-
     # Accept user input
     if q := st.chat_input("Say something"):
         question = q
+
+        if not re.search(r"\?", question):
+            st.toast("Please include a question mark.")
+            return
+
+        matches         = re.search(r"^(.*\?+)(.*)$", question)
+        question        = matches.group(1)
+        instructions    = matches.group(2)
 
         with st.chat_message("user"):
             st.write(question)
@@ -191,36 +276,23 @@ def ask():
                 chat_name = chat.data["name"]
 
                 if contains_answer:
-                    total_text = f"{total_text}\n\n{answer}"
+                    total_text = f"{total_text}\n\nFrom chat named \"{chat_name}\": {answer}"
 
         c = Chat("summarizer")
-        c.add_message(c.data["user_name"], f"Summarize the following: \n\n {total_text}")
+
+        c.add_message(c.data["user_name"], f"Summarize the following: \n\n {total_text}\n\n{instructions}")
 
         with st.chat_message("assistant"):
             reply = st.write_stream(c.stream_reply())
 
-
-
-def settings():
-    default_context = st.text_area("Default Context", value=st.session_state.settings["default_context"])
-
-    if st.button("Save"):
-        st.session_state.settings["default_context"] = default_context
-
-        Helpers.write_file(
-            "settings.json",
-            json.dumps(st.session_state.settings, indent=4))
-
-        st.toast("Settings saved.")
-
 def about():
     markdown_text = Helpers.read_file("README.md")
     st.markdown(markdown_text)
-        
-globals()["home_page"]      = st.Page(home, title="New", icon=":material/post_add:")
+
+globals()["new_page"]       = st.Page(new, title="New", icon=":material/post_add:")
 globals()["settings_page"]  = st.Page(settings, title="Settings", icon=":material/settings:")
-globals()["about_page"]     = st.Page(about, title="About", icon=":material/info:")
 globals()["ask_page"]       = st.Page(ask, title="Ask", icon=":material/campaign:")
+globals()["about_page"]     = st.Page(about, title="About", icon=":material/info:")
 
 chats_term = "Chats"
 if "search_query" in st.session_state:
@@ -228,21 +300,26 @@ if "search_query" in st.session_state:
         chats_term = "Results"
 
 pg = st.navigation({
-    "File":     [home_page, settings_page, about_page, ask_page],
+    "File":     [new_page, settings_page, ask_page, about_page],
     chats_term: make_chat_pages()
 })
 
-search_query = st.sidebar.text_input("Search")
-if st.sidebar.button("Go"):
-    st.session_state.search_query = search_query
-    st.rerun()
+if Settings.get("show_search", True, True):
+    search_query = st.sidebar.text_input("Search")
+    if st.sidebar.button("Go"):
+        st.session_state.search_query = search_query
+        st.rerun()
 
-st.sidebar.caption("Many Llama v1.0.100")
+st.sidebar.caption("Many Llama v1.0.101")
 
-if st.sidebar.button("Reload", use_container_width=True):
-    st.write("Refresh this page manually.")
-    # Streamlit devs, why do you make it hard to exit your application?
-    os._exit(0)
-    st.stop()
+if Settings.get("developer_mode"):
+    Settings.render("Autorun", "autorun", st.sidebar.toggle)
+
+
+    if st.sidebar.button("Restart", use_container_width=True, icon=":material/power_settings_new:"):
+        st.write("Refresh this page manually.")
+        # Streamlit devs, why do you make it hard to exit your application?
+        os._exit(0)
+        st.stop()
 
 pg.run()
