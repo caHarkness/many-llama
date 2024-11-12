@@ -226,7 +226,10 @@ def new():
             c.add_message(c.data["user_name"], query)
             c.save()
             make_chat_pages()
-            st.session_state.run = 1
+
+            if Settings.get("autorun", True):
+                st.session_state.run = 1
+            
             st.switch_page(globals()[f"chat_{chat_name}_page"])
 
         return
