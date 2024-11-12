@@ -77,12 +77,15 @@ def make_chat_function(chat_name):
             new_context = st.text_area("Context", value=convo.data["context"])
             save_as     = st.toggle("Save as a copy", value=False)
 
-            if st.button("Save"):
+            if st.button("Save", icon=":material/save:"):
                 convo.data["context"] = new_context
                 convo.save(new_chat_name=new_name)
 
+                print(save_as)
+
                 if save_as == False:
-                    convo.delete()
+                    if chat_name != new_name:
+                        convo.delete()
 
                 make_chat_pages()
                 st.switch_page(globals()[f"chat_{new_name}_page"])
@@ -93,7 +96,7 @@ def make_chat_function(chat_name):
 
             if st.button("Delete"):
                 convo.delete()
-                st.switch_page(home_page)
+                st.switch_page(new_page)
 
         # Begin rendering the page's content:
         st.title(chat_name)
